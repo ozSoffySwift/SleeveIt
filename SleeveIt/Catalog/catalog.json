@@ -1,5 +1,5 @@
 {
- "version": 8,
+ "version": 9,
  "updatedAt": "2026-07-22T00:00:00Z",
  "sizes": [
   {
@@ -35594,7 +35594,8 @@
    "source": "sleeveyourgames",
    "sygID": 3451,
    "bggID": "256916",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "concordia"
   },
   {
    "id": "syg-3452",
@@ -40645,7 +40646,8 @@
    "source": "sleeveyourgames",
    "sygID": 3849,
    "bggID": "271518",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "disney-villainous"
   },
   {
    "id": "syg-3850",
@@ -51722,7 +51724,8 @@
    "source": "sleeveyourgames",
    "sygID": 4717,
    "bggID": "177802",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "syg-2223"
   },
   {
    "id": "syg-4718",
@@ -79403,7 +79406,8 @@
    "source": "sleeveyourgames",
    "sygID": 6406,
    "bggID": "295577",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "syg-4966"
   },
   {
    "id": "syg-6407",
@@ -81250,7 +81254,8 @@
    "source": "sleeveyourgames",
    "sygID": 6571,
    "bggID": "299047",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "disney-villainous"
   },
   {
    "id": "syg-6572",
@@ -92153,7 +92158,8 @@
    "source": "sleeveyourgames",
    "sygID": 7330,
    "bggID": "168215",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "syg-2096"
   },
   {
    "id": "syg-7331",
@@ -94965,7 +94971,8 @@
     }
    ],
    "source": "sleeveyourgames",
-   "sygID": 7529
+   "sygID": 7529,
+   "baseGameID": "syg-2425"
   },
   {
    "id": "syg-7530",
@@ -95740,7 +95747,8 @@
    ],
    "source": "sleeveyourgames",
    "sygID": 7611,
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "disney-villainous"
   },
   {
    "id": "syg-7614",
@@ -97032,7 +97040,8 @@
    ],
    "source": "sleeveyourgames",
    "sygID": 7743,
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "seven-wonders-duel"
   },
   {
    "id": "syg-7745",
@@ -97951,7 +97960,8 @@
    "source": "sleeveyourgames",
    "sygID": 7804,
    "bggID": "333144",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "syg-2353"
   },
   {
    "id": "syg-7805",
@@ -106626,7 +106636,8 @@
    "source": "sleeveyourgames",
    "sygID": 8473,
    "bggID": "568911",
-   "sygVerified": true
+   "sygVerified": true,
+   "baseGameID": "arkham-horror-lcg"
   },
   {
    "id": "syg-8475",
@@ -126996,24 +127007,6 @@
    "baseGameID": "arkham-horror-lcg"
   },
   {
-   "id": "syg-x8374",
-   "title": "Arkham Horror: The Card Game: Revised Core Set",
-   "publisher": "Fantasy Flight Games",
-   "year": 2016,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 127,
-     "sizeID": "standard",
-     "cardWidthMM": 63.5,
-     "cardHeightMM": 88.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x8374",
-   "baseGameID": "arkham-horror-lcg"
-  },
-  {
    "id": "syg-x71",
    "title": "Arkham Horror: The Card Game: The Dunwich Legacy",
    "publisher": "Fantasy Flight Games",
@@ -127950,31 +127943,6 @@
    "source": "sleeveyourgames",
    "sygID": "x7762",
    "baseGameID": "syg-171"
-  },
-  {
-   "id": "syg-x7548",
-   "title": "7 Wonders Duel: Agora",
-   "publisher": "Repos Production",
-   "year": 2015,
-   "decks": [
-    {
-     "label": "Cards (65\u00d7100 mm)",
-     "count": 19,
-     "sizeID": "seven-wonders",
-     "cardWidthMM": 65.0,
-     "cardHeightMM": 100.0
-    },
-    {
-     "label": "Cards (44\u00d768 mm)",
-     "count": 13,
-     "sizeID": "mini-european",
-     "cardWidthMM": 44.0,
-     "cardHeightMM": 68.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x7548",
-   "baseGameID": "seven-wonders-duel"
   },
   {
    "id": "syg-x3614",
@@ -130823,24 +130791,6 @@
    ],
    "source": "sleeveyourgames",
    "sygID": "x8384",
-   "baseGameID": "concordia"
-  },
-  {
-   "id": "syg-x3450",
-   "title": "Concordia: Venus",
-   "publisher": "Rio Grande Games",
-   "year": 2018,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 110,
-     "sizeID": "catan",
-     "cardWidthMM": 59.0,
-     "cardHeightMM": 92.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x3450",
    "baseGameID": "concordia"
   },
   {
@@ -147002,24 +146952,6 @@
    "baseGameID": "syg-2094"
   },
   {
-   "id": "syg-x2098",
-   "title": "Saboteur: Duel",
-   "publisher": "Unknown",
-   "year": 2014,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 74,
-     "sizeID": "card-56x87",
-     "cardWidthMM": 56.0,
-     "cardHeightMM": 87.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x2098",
-   "baseGameID": "syg-2096"
-  },
-  {
    "id": "syg-x2099",
    "title": "Saboteur: Rock Gold",
    "publisher": "Unknown",
@@ -148629,24 +148561,6 @@
    ],
    "source": "sleeveyourgames",
    "sygID": "x2226",
-   "baseGameID": "syg-2223"
-  },
-  {
-   "id": "syg-x7677",
-   "title": "Smash Up: It's Your Fault!",
-   "publisher": "Alderac Entertainment Group",
-   "year": 2016,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 88,
-     "sizeID": "standard",
-     "cardWidthMM": 63.5,
-     "cardHeightMM": 88.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x7677",
    "baseGameID": "syg-2223"
   },
   {
@@ -150597,31 +150511,6 @@
    "baseGameID": "syg-2353"
   },
   {
-   "id": "syg-x2355",
-   "title": "Stronghold: Undead",
-   "publisher": "Unknown",
-   "year": 2010,
-   "decks": [
-    {
-     "label": "Cards (57\u00d789 mm)",
-     "count": 53,
-     "sizeID": "standard-american",
-     "cardWidthMM": 57.0,
-     "cardHeightMM": 89.0
-    },
-    {
-     "label": "Cards (44\u00d768 mm)",
-     "count": 24,
-     "sizeID": "mini-european",
-     "cardWidthMM": 44.0,
-     "cardHeightMM": 68.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x2355",
-   "baseGameID": "syg-2353"
-  },
-  {
    "id": "syg-x8204",
    "title": "Stuffed Fables: Little Brother",
    "publisher": "Plaid Hat Games",
@@ -151701,24 +151590,6 @@
    "baseGameID": "syg-2421"
   },
   {
-   "id": "syg-x2426",
-   "title": "Takenoko: Chibis",
-   "publisher": "Bombyx, Matagot",
-   "year": 2015,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 18,
-     "sizeID": "mini-european",
-     "cardWidthMM": 44.0,
-     "cardHeightMM": 68.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x2426",
-   "baseGameID": "syg-2425"
-  },
-  {
    "id": "syg-x2430",
    "title": "Tales & Games: The Hare & the Tortoise: Alternate Bet Cards",
    "publisher": "Unknown",
@@ -152077,24 +151948,6 @@
    "source": "sleeveyourgames",
    "sygID": "x2446",
    "baseGameID": "syg-2432"
-  },
-  {
-   "id": "syg-x2428",
-   "title": "Takenoko: Chibis",
-   "publisher": "Bombyx, Matagot",
-   "year": 2015,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 18,
-     "sizeID": "standard-american",
-     "cardWidthMM": 57.0,
-     "cardHeightMM": 89.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x2428",
-   "baseGameID": "syg-2427"
   },
   {
    "id": "syg-x2454",
@@ -158056,60 +157909,6 @@
    "baseGameID": "syg-2983"
   },
   {
-   "id": "syg-x8782",
-   "title": "Disney Villainous: Despicable Plots",
-   "publisher": "Wonder Forge",
-   "year": 2021,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 135,
-     "sizeID": "standard",
-     "cardWidthMM": 63.5,
-     "cardHeightMM": 88.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x8782",
-   "baseGameID": "disney-villainous"
-  },
-  {
-   "id": "syg-x8781",
-   "title": "Disney Villainous: Perfectly Wretched",
-   "publisher": "Wonder Forge",
-   "year": 2019,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 135,
-     "sizeID": "standard",
-     "cardWidthMM": 63.5,
-     "cardHeightMM": 88.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x8781",
-   "baseGameID": "disney-villainous"
-  },
-  {
-   "id": "syg-x8794",
-   "title": "Disney Villainous: Wicked to the Core",
-   "publisher": "Wonder Forge",
-   "year": 2020,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 135,
-     "sizeID": "standard",
-     "cardWidthMM": 63.5,
-     "cardHeightMM": 88.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x8794",
-   "baseGameID": "disney-villainous"
-  },
-  {
    "id": "syg-x3414",
    "title": "Alien Artifacts: Breakthrough",
    "publisher": "Portal Games",
@@ -160248,24 +160047,6 @@
    "source": "sleeveyourgames",
    "sygID": "x3225",
    "baseGameID": "syg-3224"
-  },
-  {
-   "id": "syg-x3247",
-   "title": "Forum Trajanum",
-   "publisher": "Unknown",
-   "year": 2018,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 3,
-     "sizeID": "catan",
-     "cardWidthMM": 59.0,
-     "cardHeightMM": 92.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x3247",
-   "baseGameID": "syg-3246"
   },
   {
    "id": "syg-x3239",
@@ -171888,24 +171669,6 @@
    "baseGameID": "syg-4763"
   },
   {
-   "id": "syg-x9157",
-   "title": "Three-Dragon Ante",
-   "publisher": "Wizards of the Coast",
-   "year": 2019,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 100,
-     "sizeID": "tarot",
-     "cardWidthMM": 65.0,
-     "cardHeightMM": 115.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x9157",
-   "baseGameID": "syg-4773"
-  },
-  {
    "id": "syg-x4784",
    "title": "Roland Wright: The Dice Game: Board Game Trends",
    "publisher": "Perplext",
@@ -172960,24 +172723,6 @@
    "source": "sleeveyourgames",
    "sygID": "x4965",
    "baseGameID": "syg-4964"
-  },
-  {
-   "id": "syg-x8545",
-   "title": "Dungeon Mayhem Monster Madness",
-   "publisher": "Wizards of the Coast",
-   "year": 2018,
-   "decks": [
-    {
-     "label": "Cards",
-     "count": 168,
-     "sizeID": "standard-american",
-     "cardWidthMM": 57.0,
-     "cardHeightMM": 89.0
-    }
-   ],
-   "source": "sleeveyourgames",
-   "sygID": "x8545",
-   "baseGameID": "syg-4966"
   },
   {
    "id": "syg-x5024",
