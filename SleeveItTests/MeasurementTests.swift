@@ -197,6 +197,83 @@ final class MeasurementTests: XCTestCase {
         XCTAssertEqual(height, 88.0, accuracy: 0.05)
     }
 
+    // MARK: - LiDAR depth unprojection
+
+    func testCameraPointAtPrincipalPointSitsOnTheOpticalAxis() {
+        let point = ARCardMeasurer.cameraPoint(
+            pixelX: 960, pixelY: 540, depth: 0.42, fx: 1400, fy: 1400, ox: 960, oy: 540)
+        XCTAssertEqual(point.x, 0, accuracy: 1e-6)
+        XCTAssertEqual(point.y, 0, accuracy: 1e-6)
+        XCTAssertEqual(point.z, -0.42, accuracy: 1e-6)
+    }
+
+    /// ARDepthData depth is z-distance along the optical axis, not ray length —
+    /// so the unprojected point must land exactly at z = −depth *and* on the
+    /// same ray `cameraRayDirection` builds for that pixel.
+    func testCameraPointAgreesWithTheRayModel() {
+        let (fx, fy, ox, oy): (Float, Float, Float, Float) = (1400, 1300, 960, 540)
+        let (u, v, d): (Float, Float, Float) = (1200, 300, 0.35)
+
+        let point = ARCardMeasurer.cameraPoint(
+            pixelX: u, pixelY: v, depth: d, fx: fx, fy: fy, ox: ox, oy: oy)
+        XCTAssertEqual(point.z, -d, accuracy: 1e-6)
+
+        let ray = ARCardMeasurer.cameraRayDirection(
+            pixelX: u, pixelY: v, fx: fx, fy: fy, ox: ox, oy: oy)
+        let cross = simd_cross(simd_normalize(point), ray)
+        XCTAssertEqual(simd_length(cross), 0, accuracy: 1e-5, "point must lie on the pixel's ray")
+    }
+
+    // MARK: - Rectangle selection
+
+    private func candidate(
+        confidence: Float, area: Double, at center: CGPoint
+    ) -> ARCardMeasurer.RectCandidate {
+        ARCardMeasurer.RectCandidate(confidence: confidence, area: area, center: center)
+    }
+
+    /// Cards with printed inner frames produce two concentric detections, and
+    /// the inner one often carries the higher confidence. Picking it silently
+    /// shrinks the measurement — the outer (larger) rectangle is the card.
+    func testSelectionPrefersOuterEdgeOverConfidentInnerFrame() {
+        let index = ARCardMeasurer.bestCandidateIndex([
+            candidate(confidence: 0.95, area: 0.040, at: CGPoint(x: 0.5, y: 0.5)),  // inner art frame
+            candidate(confidence: 0.80, area: 0.085, at: CGPoint(x: 0.5, y: 0.5)),  // card edge
+        ])
+        XCTAssertEqual(index, 1)
+    }
+
+    /// A bigger rectangle at the edge of the frame (notebook, placemat) must
+    /// not out-rank the card the user is actually aiming at.
+    func testSelectionPrefersTheAimedCardOverALargerBystander() {
+        let index = ARCardMeasurer.bestCandidateIndex([
+            candidate(confidence: 0.9, area: 0.30, at: CGPoint(x: 0.9, y: 0.85)),  // placemat corner
+            candidate(confidence: 0.9, area: 0.06, at: CGPoint(x: 0.52, y: 0.47)), // aimed card
+        ])
+        XCTAssertEqual(index, 1)
+    }
+
+    func testSelectionFallsBackToOffCentreWhenNothingIsAimed() {
+        let index = ARCardMeasurer.bestCandidateIndex([
+            candidate(confidence: 0.9, area: 0.06, at: CGPoint(x: 0.15, y: 0.8)),
+        ])
+        XCTAssertEqual(index, 0)
+    }
+
+    func testSelectionReturnsNilForNoCandidates() {
+        XCTAssertNil(ARCardMeasurer.bestCandidateIndex([]))
+    }
+
+    func testQuadAreaOfUnitSquare() {
+        let square = [
+            CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0),
+            CGPoint(x: 1, y: 1), CGPoint(x: 0, y: 1),
+        ]
+        XCTAssertEqual(ARCardMeasurer.quadArea(of: square), 1.0, accuracy: 1e-9)
+        // Winding order must not flip the sign.
+        XCTAssertEqual(ARCardMeasurer.quadArea(of: square.reversed()), 1.0, accuracy: 1e-9)
+    }
+
     // MARK: - Units
 
     func testMillimetreFormattingTrimsWholeNumbersOnly() {

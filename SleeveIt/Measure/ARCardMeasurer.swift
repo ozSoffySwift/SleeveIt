@@ -14,15 +14,17 @@ private let snapshotContext = CIContext()
 
 /// Drives the AR session and turns camera frames into real-world card dimensions.
 ///
-/// The approach: Vision finds the card's quadrilateral in the camera image, then
-/// ARKit raycasts each of those four corners onto the detected table plane. That
-/// yields four points in metres in world space, and the edge lengths between them
-/// are the card's true physical size. Vision alone could only give pixels; ARKit
-/// alone could only measure where the user aimed. Together they measure the card
-/// the user actually placed down.
+/// The approach: Vision finds the card's quadrilateral in the camera image; the
+/// card's plane is anchored in world space (LiDAR depth on devices that have it,
+/// raycast otherwise); and each corner's camera ray is intersected with that
+/// plane. That yields four coplanar points in metres, and the edge lengths
+/// between them are the card's true physical size. Vision alone could only give
+/// pixels; ARKit alone could only measure where the user aimed. Together they
+/// measure the card the user actually placed down.
 ///
-/// Works on any ARKit-capable device. LiDAR improves plane depth accuracy but is
-/// not required.
+/// Works on any ARKit-capable device. On LiDAR devices (iPhone Pro models) the
+/// plane distance comes straight from the depth sensor, which is what the
+/// measurement's absolute scale hangs on.
 @MainActor
 final class ARCardMeasurer: NSObject, ObservableObject {
 
@@ -152,6 +154,15 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         configuration.worldAlignment = .gravity
         if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
             configuration.sceneReconstruction = .mesh
+        }
+        // On LiDAR devices, per-pixel depth anchors the card's plane at the
+        // sensor-measured distance instead of a raycast estimate. The whole
+        // measurement scales with that distance, so this is the single biggest
+        // accuracy lever. Smoothed variant: temporally filtered, less jitter.
+        if ARWorldTrackingConfiguration.supportsFrameSemantics(.smoothedSceneDepth) {
+            configuration.frameSemantics.insert(.smoothedSceneDepth)
+        } else if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            configuration.frameSemantics.insert(.sceneDepth)
         }
         session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
     }
@@ -330,10 +341,63 @@ final class ARCardMeasurer: NSObject, ObservableObject {
             return nil
         }
 
-        guard let best = (request.results ?? []).max(by: { $0.confidence < $1.confidence }) else {
-            return nil
+        let observations = request.results ?? []
+        let candidates = observations.map { obs in
+            RectCandidate(
+                confidence: obs.confidence,
+                area: quadArea(of: [obs.topLeft, obs.topRight, obs.bottomRight, obs.bottomLeft]),
+                center: CGPoint(
+                    x: (obs.topLeft.x + obs.topRight.x + obs.bottomRight.x + obs.bottomLeft.x) / 4,
+                    y: (obs.topLeft.y + obs.topRight.y + obs.bottomRight.y + obs.bottomLeft.y) / 4
+                )
+            )
         }
-        return measure(observation: best, frame: frame, session: session, viewport: viewport, includeSnapshot: includeSnapshot)
+        guard let bestIndex = bestCandidateIndex(candidates) else { return nil }
+        return measure(
+            observation: observations[bestIndex],
+            frame: frame, session: session, viewport: viewport, includeSnapshot: includeSnapshot)
+    }
+
+    /// A rectangle candidate reduced to what selection needs — pure data, so the
+    /// picking rule is unit-testable without constructing Vision observations.
+    struct RectCandidate {
+        var confidence: Float
+        var area: Double
+        var center: CGPoint
+    }
+
+    /// Picks which detected rectangle is *the card*.
+    ///
+    /// Confidence alone is a trap: many cards print an inner frame around the
+    /// art, Vision reports both rectangles, and the inner one often scores
+    /// higher — silently shrinking the measurement. Area breaks that tie in
+    /// favour of the physical card edge. And between separate objects, the one
+    /// nearest the image centre wins: it's the one the user is aiming at, not
+    /// the notebook beside it.
+    nonisolated static func bestCandidateIndex(_ candidates: [RectCandidate]) -> Int? {
+        guard !candidates.isEmpty else { return nil }
+        let imageCenter = CGPoint(x: 0.5, y: 0.5)
+        // Concentric rectangles (within 8% of each other's centre) collapse to
+        // the largest — the card's outer edge, not its printed inner frame.
+        let aimed = candidates.indices.filter { i in
+            let c = candidates[i].center
+            return hypot(c.x - imageCenter.x, c.y - imageCenter.y) < 0.25
+        }
+        let pool = aimed.isEmpty ? Array(candidates.indices) : aimed
+        return pool.max { candidates[$0].area < candidates[$1].area }
+    }
+
+    /// Shoelace area of a normalized quad. Pure; used to prefer the card's
+    /// outer edge over any concentric inner frame.
+    nonisolated static func quadArea(of corners: [CGPoint]) -> Double {
+        guard corners.count >= 3 else { return 0 }
+        var sum = 0.0
+        for i in corners.indices {
+            let a = corners[i]
+            let b = corners[(i + 1) % corners.count]
+            sum += a.x * b.y - b.x * a.y
+        }
+        return abs(sum) / 2
     }
 
     /// Measures the observed rectangle against the surface it's resting on.
@@ -359,7 +423,12 @@ final class ARCardMeasurer: NSObject, ObservableObject {
             observation.bottomLeft,
         ]
 
-        // 1. The card's plane, from one raycast through the centre.
+        // 1. The card's plane. The anchor *point* sets the measurement's scale,
+        // so its priority order is: LiDAR depth at the quad's centre (a direct
+        // time-of-flight distance), then a raycast against detected plane
+        // geometry, then an estimated plane. The raycast still supplies the
+        // plane's *orientation* when it hits; failing that, gravity alignment
+        // makes straight-up the honest normal for a horizontal table.
         let center = CGPoint(
             x: corners.map(\.x).reduce(0, +) / 4,
             y: corners.map(\.y).reduce(0, +) / 4
@@ -371,14 +440,24 @@ final class ARCardMeasurer: NSObject, ObservableObject {
             planeHit = session.raycast(frame.raycastQuery(
                 from: sensorCenter, allowing: .estimatedPlane, alignment: .horizontal)).first
         }
-        guard let planeHit else { return nil }
+        let depthPoint = depthAnchoredPoint(frame: frame, sensorPoint: sensorCenter)
 
-        let planePoint = simd_make_float3(planeHit.worldTransform.columns.3)
-        var planeNormal = simd_make_float3(planeHit.worldTransform.columns.1)
-        if simd_length(planeNormal) < 0.5 {
-            planeNormal = simd_float3(0, 1, 0)
+        let planePoint: simd_float3
+        if let depthPoint {
+            planePoint = depthPoint
+        } else if let planeHit {
+            planePoint = simd_make_float3(planeHit.worldTransform.columns.3)
+        } else {
+            return nil
         }
-        planeNormal = simd_normalize(planeNormal)
+
+        var planeNormal = simd_float3(0, 1, 0)
+        if let planeHit {
+            let rawNormal = simd_make_float3(planeHit.worldTransform.columns.1)
+            if simd_length(rawNormal) > 0.5 {
+                planeNormal = simd_normalize(rawNormal)
+            }
+        }
 
         // 2. Each corner's camera ray, intersected with that plane.
         let camera = frame.camera
@@ -488,6 +567,86 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         fx: Float, fy: Float, ox: Float, oy: Float
     ) -> simd_float3 {
         simd_normalize(simd_float3((pixelX - ox) / fx, -(pixelY - oy) / fy, -1))
+    }
+
+    /// Unprojects a captured-image pixel with a known depth into ARKit camera
+    /// space.
+    ///
+    /// `depth` follows ARDepthData semantics: metres along the camera's optical
+    /// axis (z-depth), *not* Euclidean distance along the ray — so the result's
+    /// camera-space z is exactly `-depth`. Same axis convention as
+    /// `cameraRayDirection`: +x right, +y up, looking down −z.
+    nonisolated static func cameraPoint(
+        pixelX: Float, pixelY: Float, depth: Float,
+        fx: Float, fy: Float, ox: Float, oy: Float
+    ) -> simd_float3 {
+        simd_float3((pixelX - ox) / fx * depth, -(pixelY - oy) / fy * depth, -depth)
+    }
+
+    /// Reads LiDAR depth at a sensor-normalized point and returns the world
+    /// point on the surface there, or nil when depth is absent or untrusted.
+    ///
+    /// The measurement's scale is set entirely by how far away the card's
+    /// plane is, so anchoring it with a direct time-of-flight distance beats
+    /// any raycast estimate. The depth map is coarse (256×192) — a 3×3 median
+    /// rides out single-texel noise — and the confidence map gates out what
+    /// the sensor itself distrusts (notably under ~25 cm, LiDAR's minimum
+    /// range, where the raycast fallback takes over).
+    nonisolated private static func depthAnchoredPoint(
+        frame: ARFrame, sensorPoint: CGPoint
+    ) -> simd_float3? {
+        guard let depthData = frame.smoothedSceneDepth ?? frame.sceneDepth else { return nil }
+        let depthMap = depthData.depthMap
+        guard CVPixelBufferGetPixelFormatType(depthMap) == kCVPixelFormatType_DepthFloat32 else {
+            return nil
+        }
+
+        let width = CVPixelBufferGetWidth(depthMap)
+        let height = CVPixelBufferGetHeight(depthMap)
+        let px = min(max(Int(sensorPoint.x * CGFloat(width)), 0), width - 1)
+        let py = min(max(Int(sensorPoint.y * CGFloat(height)), 0), height - 1)
+
+        if let confidenceMap = depthData.confidenceMap {
+            CVPixelBufferLockBaseAddress(confidenceMap, .readOnly)
+            defer { CVPixelBufferUnlockBaseAddress(confidenceMap, .readOnly) }
+            if let base = CVPixelBufferGetBaseAddress(confidenceMap) {
+                let rowBytes = CVPixelBufferGetBytesPerRow(confidenceMap)
+                let level = base.advanced(by: py * rowBytes + px)
+                    .assumingMemoryBound(to: UInt8.self).pointee
+                guard level >= UInt8(ARConfidenceLevel.medium.rawValue) else { return nil }
+            }
+        }
+
+        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddress(depthMap) else { return nil }
+        let rowBytes = CVPixelBufferGetBytesPerRow(depthMap)
+
+        var samples: [Float] = []
+        for dy in -1...1 {
+            for dx in -1...1 {
+                let x = px + dx, y = py + dy
+                guard x >= 0, x < width, y >= 0, y < height else { continue }
+                let value = base.advanced(by: y * rowBytes + x * MemoryLayout<Float32>.stride)
+                    .assumingMemoryBound(to: Float32.self).pointee
+                if value.isFinite, value > 0.1, value < 2.0 { samples.append(value) }
+            }
+        }
+        // A patch straddling a depth discontinuity (table edge) yields few
+        // valid samples — better no anchor than a wrong one.
+        guard samples.count >= 5 else { return nil }
+        let depth = samples.sorted()[samples.count / 2]
+
+        let intrinsics = frame.camera.intrinsics
+        let local = cameraPoint(
+            pixelX: Float(sensorPoint.x) * Float(CVPixelBufferGetWidth(frame.capturedImage)),
+            pixelY: Float(sensorPoint.y) * Float(CVPixelBufferGetHeight(frame.capturedImage)),
+            depth: depth,
+            fx: intrinsics[0][0], fy: intrinsics[1][1],
+            ox: intrinsics[2][0], oy: intrinsics[2][1]
+        )
+        let world = frame.camera.transform * simd_float4(local, 1)
+        return simd_make_float3(world)
     }
 
     /// Ray–plane intersection; nil when the ray is parallel to or points away
