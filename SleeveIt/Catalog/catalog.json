@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "updatedAt": "2026-07-22T00:00:00Z",
  "sizes": [
   {
@@ -325,6 +325,15 @@
    "tagline": "90\u00d7140 decks",
    "blurb": "Oversized display cards.",
    "examples": []
+  },
+  {
+   "id": "square-60",
+   "name": "Square (60\u00d760)",
+   "widthMM": 60,
+   "heightMM": 60,
+   "tagline": "57\u201360mm square decks",
+   "blurb": "Square cards in the 57\u201360mm range.",
+   "examples": []
   }
  ],
  "games": [
@@ -402,21 +411,21 @@
    "year": 2017,
    "decks": [
     {
-     "label": "Ability cards",
-     "count": 508,
-     "sizeID": "standard"
+     "label": "Cards (44\u00d768 mm)",
+     "count": 975,
+     "sizeID": "mini-european",
+     "cardWidthMM": 44.0,
+     "cardHeightMM": 68.0
     },
     {
-     "label": "Attack modifier cards",
-     "count": 434,
-     "sizeID": "mini-american"
-    },
-    {
-     "label": "Item cards",
-     "count": 133,
-     "sizeID": "standard"
+     "label": "Cards (63.5\u00d788 mm)",
+     "count": 727,
+     "sizeID": "standard",
+     "cardWidthMM": 63.5,
+     "cardHeightMM": 88.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "jaws-of-the-lion",
@@ -425,16 +434,21 @@
    "year": 2020,
    "decks": [
     {
-     "label": "Ability cards",
-     "count": 130,
-     "sizeID": "standard"
+     "label": "Cards (63.5\u00d788 mm)",
+     "count": 166,
+     "sizeID": "standard",
+     "cardWidthMM": 63.5,
+     "cardHeightMM": 88.0
     },
     {
-     "label": "Attack modifier cards",
-     "count": 160,
-     "sizeID": "mini-american"
+     "label": "Cards (44\u00d768 mm)",
+     "count": 371,
+     "sizeID": "mini-european",
+     "cardWidthMM": 44.0,
+     "cardHeightMM": 68.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "dixit",
@@ -445,9 +459,12 @@
     {
      "label": "Illustration cards",
      "count": 84,
-     "sizeID": "tarot"
+     "sizeID": "card-80x120",
+     "cardWidthMM": 80.0,
+     "cardHeightMM": 120.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "mysterium",
@@ -598,9 +615,12 @@
     {
      "label": "Kingdom, treasure & victory cards",
      "count": 500,
-     "sizeID": "mini-european"
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "race-for-the-galaxy",
@@ -610,10 +630,13 @@
    "decks": [
     {
      "label": "Game cards",
-     "count": 114,
-     "sizeID": "mini-european"
+     "count": 150,
+     "sizeID": "standard",
+     "cardWidthMM": 63.5,
+     "cardHeightMM": 88.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "scythe",
@@ -727,10 +750,13 @@
    "decks": [
     {
      "label": "Personality & city cards",
-     "count": 130,
-     "sizeID": "mini-european"
+     "count": 72,
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "great-western-trail",
@@ -754,9 +780,12 @@
     {
      "label": "Occupation & minor improvement cards",
      "count": 360,
-     "sizeID": "mini-european"
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "puerto-rico",
@@ -885,9 +914,12 @@
     {
      "label": "Sushi cards",
      "count": 181,
-     "sizeID": "standard"
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "jaipur",
@@ -911,9 +943,12 @@
     {
      "label": "Special tile & scoring cards",
      "count": 6,
-     "sizeID": "standard"
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "res-arcana",
@@ -1035,9 +1070,12 @@
     {
      "label": "Expedition cards",
      "count": 60,
-     "sizeID": "standard"
+     "sizeID": "card-70x110",
+     "cardWidthMM": 70.0,
+     "cardHeightMM": 110.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "love-letter",
@@ -1061,9 +1099,12 @@
     {
      "label": "Character cards",
      "count": 15,
-     "sizeID": "standard"
+     "sizeID": "seven-wonders",
+     "cardWidthMM": 65.0,
+     "cardHeightMM": 100.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "the-crew",
@@ -1089,10 +1130,13 @@
    "decks": [
     {
      "label": "Firework cards",
-     "count": 50,
-     "sizeID": "standard"
+     "count": 60,
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "skull-king",
@@ -1142,9 +1186,12 @@
     {
      "label": "Establishment & landmark cards",
      "count": 108,
-     "sizeID": "standard"
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "the-mind",
@@ -1238,10 +1285,13 @@
    "decks": [
     {
      "label": "Omen, event & item cards",
-     "count": 149,
-     "sizeID": "standard"
+     "count": 80,
+     "sizeID": "card-63x112",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 110.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "mansions-of-madness",
@@ -1339,16 +1389,21 @@
    "year": 2024,
    "decks": [
     {
-     "label": "Dragon cards",
+     "label": "Cards (58\u00d787 mm)",
      "count": 183,
-     "sizeID": "standard"
+     "sizeID": "standard-american",
+     "cardWidthMM": 58.0,
+     "cardHeightMM": 87.0
     },
     {
-     "label": "Guild cards",
-     "count": 17,
-     "sizeID": "mini"
+     "label": "Cards (57\u00d757 mm)",
+     "count": 75,
+     "sizeID": "square-60",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 57.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "lords-of-waterdeep",
@@ -1372,9 +1427,12 @@
     {
      "label": "Cards",
      "count": 162,
-     "sizeID": "standard"
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "innovation",
@@ -1498,10 +1556,13 @@
    "decks": [
     {
      "label": "Character & quest cards",
-     "count": 38,
-     "sizeID": "standard"
+     "count": 26,
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "pokemon-tcg",
@@ -1682,9 +1743,12 @@
     {
      "label": "Cards",
      "count": 81,
-     "sizeID": "standard"
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "fluxx",
@@ -1780,9 +1844,12 @@
     {
      "label": "Number cards",
      "count": 33,
-     "sizeID": "standard"
+     "sizeID": "card-80x120",
+     "cardWidthMM": 80.0,
+     "cardHeightMM": 115.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "for-sale",
@@ -1793,9 +1860,12 @@
     {
      "label": "Property & cheque cards",
      "count": 60,
-     "sizeID": "standard"
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "the-game",
@@ -1805,10 +1875,13 @@
    "decks": [
     {
      "label": "Number cards",
-     "count": 98,
-     "sizeID": "standard"
+     "count": 102,
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 91.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "bohnanza",
@@ -1832,9 +1905,12 @@
     {
      "label": "Tree cards",
      "count": 80,
-     "sizeID": "standard"
+     "sizeID": "catan",
+     "cardWidthMM": 59.0,
+     "cardHeightMM": 92.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "sushi-go",
@@ -1861,9 +1937,12 @@
     {
      "label": "Role cards",
      "count": 16,
-     "sizeID": "standard"
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "taco-cat-goat-cheese-pizza",
@@ -1999,10 +2078,13 @@
    "decks": [
     {
      "label": "Character & district cards",
-     "count": 111,
-     "sizeID": "standard"
+     "count": 106,
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.0,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "welcome-to",
@@ -2015,10 +2097,13 @@
    "decks": [
     {
      "label": "Construction cards",
-     "count": 81,
-     "sizeID": "standard"
+     "count": 111,
+     "sizeID": "standard-american",
+     "cardWidthMM": 57.5,
+     "cardHeightMM": 89.0
     }
-   ]
+   ],
+   "sizeSource": "sleeveyourgames-verified"
   },
   {
    "id": "quest-for-el-dorado",
