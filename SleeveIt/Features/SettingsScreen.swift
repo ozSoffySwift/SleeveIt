@@ -246,6 +246,13 @@ struct AboutScreen: View {
 
             Section("Card data") {
                 Text("Card sizes are compiled from manufacturer specs and the board gaming community's own measurements. Sizes can vary slightly between printings — check the fit before buying in bulk.")
+
+                SafariLink(
+                    title: "SleeveYourGames.com",
+                    subtitle: "Card size data used with permission",
+                    systemImage: "heart.circle",
+                    url: URL(string: "https://www.sleeveyourgames.com")!
+                )
             }
 
             Section {

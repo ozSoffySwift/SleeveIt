@@ -31,7 +31,9 @@ SwiftUI · SwiftData · ARKit · Vision · WidgetKit · App Intents · iOS 17+ �
 - **Measure a card** with the camera — ARKit projects the card's corners onto the surface it
   rests on for a true-millimetre size, then recommends the matching sleeve. A reference-photo mode
   covers devices without AR.
-- **Search a catalog** of games and see every deck's card count and size, expansions included.
+- **Search a catalog** of 9,000+ games and see every deck's card count and size, expansions
+  included. Card size data licensed from [SleeveYourGames.com](https://www.sleeveyourgames.com),
+  used with permission.
 - **My List** consolidates every game (and measured card) into one shopping list — "buy 892
   Standard, 434 Mini American" — with sleeved-progress tracking and share/export.
 - **Import your BoardGameGeek collection** (read-only) to seed the list.

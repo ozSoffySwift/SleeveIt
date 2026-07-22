@@ -28,6 +28,8 @@ struct SearchScreen: View {
                 let r = rhs.title.range(of: trimmed, options: [.caseInsensitive, .anchored]) != nil
                 return l == r ? lhs.title < rhs.title : l
             }
+            .prefix(120)
+            .map { $0 }
     }
 
     private var recentGames: [Game] {
