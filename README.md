@@ -94,7 +94,7 @@ Serve the same JSON shape with an incremented `version`. The client sends `If-No
 
 ### Catalog data accuracy
 
-The seed ships 79 games (expansions included) and 9 sleeve standards. **Card counts need verifying before you ship.** They were compiled from general knowledge of these games, not transcribed from a authoritative source, and counts legitimately vary between printings, editions and localisations — a second-edition box often differs from the first. Treat the numbers as a strong starting point, not ground truth. The app already tells users sizes vary by printing, but a wrong count means someone buys the wrong number of sleeves.
+The seed ships 124 games (expansions included) and 10 sleeve standards. **Card counts need verifying before you ship.** They were compiled from general knowledge of these games, not transcribed from a authoritative source, and counts legitimately vary between printings, editions and localisations — a second-edition box often differs from the first. Treat the numbers as a strong starting point, not ground truth. The app already tells users sizes vary by printing, but a wrong count means someone buys the wrong number of sleeves.
 
 Cross-checking against the [Card Size Database geeklist](https://boardgamegeek.com/geeklist/48357/card-size-database) is the fastest way to firm them up.
 

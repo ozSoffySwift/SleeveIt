@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "updatedAt": "2026-07-22T00:00:00Z",
   "sizes": [
     {
@@ -115,6 +115,18 @@
       "examples": [
         "Hive",
         "Tsuro"
+      ]
+    },
+    {
+      "id": "japanese",
+      "name": "Japanese (Small)",
+      "widthMM": 59,
+      "heightMM": 86,
+      "tagline": "Yu-Gi-Oh! \u00b7 small TCGs",
+      "blurb": "The small TCG size, sold as \"Japanese\" or \"mini\" TCG sleeves.",
+      "examples": [
+        "Yu-Gi-Oh!",
+        "Cardfight!! Vanguard"
       ]
     }
   ],
@@ -1306,6 +1318,637 @@
           "label": "Character & quest cards",
           "count": 38,
           "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "pokemon-tcg",
+      "title": "Pok\u00e9mon Trading Card Game",
+      "publisher": "The Pok\u00e9mon Company",
+      "year": 1996,
+      "aliases": [
+        "Pokemon",
+        "Pokemon TCG"
+      ],
+      "decks": [
+        {
+          "label": "Cards (per 60-card deck)",
+          "count": 60,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "yugioh",
+      "title": "Yu-Gi-Oh! Trading Card Game",
+      "publisher": "Konami",
+      "year": 1999,
+      "aliases": [
+        "Yu-Gi-Oh",
+        "YuGiOh"
+      ],
+      "decks": [
+        {
+          "label": "Cards (per 40-card deck)",
+          "count": 40,
+          "sizeID": "japanese"
+        }
+      ]
+    },
+    {
+      "id": "one-piece-card-game",
+      "title": "One Piece Card Game",
+      "publisher": "Bandai",
+      "year": 2022,
+      "aliases": [
+        "One Piece TCG"
+      ],
+      "decks": [
+        {
+          "label": "Deck + leader",
+          "count": 51,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "digimon-card-game",
+      "title": "Digimon Card Game",
+      "publisher": "Bandai",
+      "year": 2020,
+      "decks": [
+        {
+          "label": "Deck + digi-eggs",
+          "count": 55,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "keyforge",
+      "title": "KeyForge",
+      "publisher": "Fantasy Flight Games",
+      "year": 2018,
+      "decks": [
+        {
+          "label": "Archon deck",
+          "count": 37,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "android-netrunner",
+      "title": "Android: Netrunner",
+      "publisher": "Fantasy Flight Games",
+      "year": 2012,
+      "aliases": [
+        "Netrunner"
+      ],
+      "decks": [
+        {
+          "label": "Core set cards",
+          "count": 252,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "uno",
+      "title": "UNO",
+      "publisher": "Mattel",
+      "year": 1971,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 108,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "phase-10",
+      "title": "Phase 10",
+      "publisher": "Mattel",
+      "year": 1982,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 108,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "skip-bo",
+      "title": "Skip-Bo",
+      "publisher": "Mattel",
+      "year": 1967,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 162,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "monopoly-deal",
+      "title": "Monopoly Deal",
+      "publisher": "Hasbro",
+      "year": 2008,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 110,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "sequence",
+      "title": "Sequence",
+      "publisher": "Jax",
+      "year": 1982,
+      "decks": [
+        {
+          "label": "Playing cards",
+          "count": 104,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "skyjo",
+      "title": "Skyjo",
+      "publisher": "Magilano",
+      "year": 2015,
+      "decks": [
+        {
+          "label": "Number cards",
+          "count": 150,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "set",
+      "title": "SET",
+      "publisher": "Set Enterprises",
+      "year": 1988,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 81,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "fluxx",
+      "title": "Fluxx",
+      "publisher": "Looney Labs",
+      "year": 1997,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 100,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "munchkin",
+      "title": "Munchkin",
+      "publisher": "Steve Jackson Games",
+      "year": 2001,
+      "decks": [
+        {
+          "label": "Door & treasure cards",
+          "count": 168,
+          "sizeID": "standard-american"
+        }
+      ]
+    },
+    {
+      "id": "cards-against-humanity",
+      "title": "Cards Against Humanity",
+      "publisher": "Cards Against Humanity",
+      "year": 2011,
+      "aliases": [
+        "CAH"
+      ],
+      "decks": [
+        {
+          "label": "White & black cards",
+          "count": 550,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "take-5",
+      "title": "Take 5",
+      "publisher": "AMIGO",
+      "year": 1994,
+      "aliases": [
+        "6 nimmt!",
+        "6 nimmt"
+      ],
+      "decks": [
+        {
+          "label": "Number cards",
+          "count": 104,
+          "sizeID": "standard-american"
+        }
+      ]
+    },
+    {
+      "id": "forbidden-island",
+      "title": "Forbidden Island",
+      "publisher": "Gamewright",
+      "year": 2010,
+      "decks": [
+        {
+          "label": "Treasure & flood cards",
+          "count": 58,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "king-of-tokyo",
+      "title": "King of Tokyo",
+      "publisher": "IELLO",
+      "year": 2011,
+      "decks": [
+        {
+          "label": "Power cards",
+          "count": 66,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "no-thanks",
+      "title": "No Thanks!",
+      "publisher": "AMIGO",
+      "year": 2004,
+      "decks": [
+        {
+          "label": "Number cards",
+          "count": 33,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "for-sale",
+      "title": "For Sale",
+      "publisher": "Eagle-Gryphon Games",
+      "year": 1997,
+      "decks": [
+        {
+          "label": "Property & cheque cards",
+          "count": 60,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "the-game",
+      "title": "The Game",
+      "publisher": "Pandasaurus Games",
+      "year": 2015,
+      "decks": [
+        {
+          "label": "Number cards",
+          "count": 98,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "bohnanza",
+      "title": "Bohnanza",
+      "publisher": "AMIGO",
+      "year": 1997,
+      "decks": [
+        {
+          "label": "Bean cards",
+          "count": 104,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "arboretum",
+      "title": "Arboretum",
+      "publisher": "Renegade Game Studios",
+      "year": 2015,
+      "decks": [
+        {
+          "label": "Tree cards",
+          "count": 80,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "sushi-go",
+      "title": "Sushi Go!",
+      "publisher": "Gamewright",
+      "year": 2013,
+      "decks": [
+        {
+          "label": "Sushi cards",
+          "count": 108,
+          "sizeID": "standard-american"
+        }
+      ]
+    },
+    {
+      "id": "one-night-ultimate-werewolf",
+      "title": "One Night Ultimate Werewolf",
+      "publisher": "Bezier Games",
+      "year": 2014,
+      "aliases": [
+        "One Night Werewolf"
+      ],
+      "decks": [
+        {
+          "label": "Role cards",
+          "count": 16,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "taco-cat-goat-cheese-pizza",
+      "title": "Taco Cat Goat Cheese Pizza",
+      "publisher": "Dolphin Hat Games",
+      "year": 2018,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 64,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "unstable-unicorns",
+      "title": "Unstable Unicorns",
+      "publisher": "Unstable Games",
+      "year": 2017,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 135,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "regicide",
+      "title": "Regicide",
+      "publisher": "Badgers from Mars",
+      "year": 2020,
+      "decks": [
+        {
+          "label": "Playing cards",
+          "count": 54,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "the-fox-in-the-forest",
+      "title": "The Fox in the Forest",
+      "publisher": "Foxtrot Games",
+      "year": 2017,
+      "aliases": [
+        "Fox in the Forest"
+      ],
+      "decks": [
+        {
+          "label": "Trick cards",
+          "count": 33,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "virus",
+      "title": "Virus!",
+      "publisher": "Tranjis Games",
+      "year": 2015,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 68,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "boss-monster",
+      "title": "Boss Monster",
+      "publisher": "Brotherwise Games",
+      "year": 2013,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 155,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "hero-realms",
+      "title": "Hero Realms",
+      "publisher": "White Wizard Games",
+      "year": 2016,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 144,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "hogwarts-battle",
+      "title": "Harry Potter: Hogwarts Battle",
+      "publisher": "The Op",
+      "year": 2016,
+      "aliases": [
+        "Hogwarts Battle"
+      ],
+      "decks": [
+        {
+          "label": "Deck-building cards",
+          "count": 252,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "disney-villainous",
+      "title": "Disney Villainous",
+      "publisher": "Ravensburger",
+      "year": 2018,
+      "aliases": [
+        "Villainous"
+      ],
+      "decks": [
+        {
+          "label": "Villain & fate cards",
+          "count": 270,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "citadels",
+      "title": "Citadels",
+      "publisher": "Z-Man Games",
+      "year": 2000,
+      "decks": [
+        {
+          "label": "Character & district cards",
+          "count": 111,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "welcome-to",
+      "title": "Welcome To...",
+      "publisher": "Deep Water Games",
+      "year": 2018,
+      "aliases": [
+        "Welcome To"
+      ],
+      "decks": [
+        {
+          "label": "Construction cards",
+          "count": 81,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "quest-for-el-dorado",
+      "title": "The Quest for El Dorado",
+      "publisher": "Ravensburger",
+      "year": 2017,
+      "aliases": [
+        "El Dorado"
+      ],
+      "decks": [
+        {
+          "label": "Expedition cards",
+          "count": 96,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "forest-shuffle",
+      "title": "Forest Shuffle",
+      "publisher": "Lookout Games",
+      "year": 2023,
+      "decks": [
+        {
+          "label": "Tree & dweller cards",
+          "count": 180,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "meadow",
+      "title": "Meadow",
+      "publisher": "Rebel Studio",
+      "year": 2021,
+      "decks": [
+        {
+          "label": "Observation cards",
+          "count": 184,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "sea-salt-paper",
+      "title": "Sea Salt & Paper",
+      "publisher": "Bombyx",
+      "year": 2022,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 58,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "red-rising",
+      "title": "Red Rising",
+      "publisher": "Stonemaier Games",
+      "year": 2021,
+      "decks": [
+        {
+          "label": "Character cards",
+          "count": 112,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "tm-ares-expedition",
+      "title": "Terraforming Mars: Ares Expedition",
+      "publisher": "FryxGames",
+      "year": 2021,
+      "aliases": [
+        "Ares Expedition"
+      ],
+      "decks": [
+        {
+          "label": "Project cards",
+          "count": 216,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline",
+      "publisher": "Asmodee",
+      "year": 2012,
+      "decks": [
+        {
+          "label": "Event cards",
+          "count": 110,
+          "sizeID": "mini-european"
+        }
+      ]
+    },
+    {
+      "id": "catan-cities-knights",
+      "title": "Catan: Cities & Knights",
+      "publisher": "Kosmos",
+      "year": 1998,
+      "aliases": [
+        "Cities and Knights"
+      ],
+      "baseGameID": "catan",
+      "decks": [
+        {
+          "label": "Progress cards",
+          "count": 54,
+          "sizeID": "catan"
         }
       ]
     }
