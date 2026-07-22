@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Xcode — user-specific
+xcuserdata/
+**/xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+
+# Xcode — build
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Secrets — never commit
+# The BoardGameGeek API token lives here and must stay out of the repo.
+Support/BGGToken.plist
+**/BGGToken.plist
+*.p12
+*.mobileprovision
+secrets.xcconfig
