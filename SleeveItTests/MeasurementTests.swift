@@ -281,14 +281,17 @@ final class CatalogTests: XCTestCase {
         XCTAssertEqual(sizeIDs.count, payload.sizes.count, "Duplicate size ids")
     }
 
-    func testWingspanTotalsMatchTheDesign() throws {
+    /// Synthetic multi-size game exercising the aggregation math. (Its numbers
+    /// once mirrored Wingspan, but real Wingspan cards are all one size —
+    /// 57×87mm, corrected in catalog v6 — so this is deliberately fictional.)
+    func testDeckTotalsAggregateAcrossSizes() throws {
         let container = try ModelContainer(
             for: Game.self, CardDeck.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
 
-        let game = Game(id: "wingspan", title: "Wingspan", publisher: "Stonemaier Games", year: 2019)
+        let game = Game(id: "multi", title: "Multi-Size Game", publisher: "", year: 2020)
         context.insert(game)
         for (index, spec) in [("Bird cards", 170, "standard"), ("Bonus cards", 26, "mini")].enumerated() {
             let deck = CardDeck(label: spec.0, count: spec.1, sizeID: spec.2, sortIndex: index)

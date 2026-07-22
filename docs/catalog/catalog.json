@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "updatedAt": "2026-07-22T00:00:00Z",
   "sizes": [
     {
@@ -33,10 +33,9 @@
       "name": "Mini",
       "widthMM": 43,
       "heightMM": 65,
-      "tagline": "Wingspan bonus cards \u00b7 Everdell",
+      "tagline": "Everdell events \u00b7 small decks",
       "blurb": "Sits between the two mini standards. Worth checking before buying in bulk.",
       "examples": [
-        "Wingspan",
         "Everdell"
       ]
     },
@@ -45,12 +44,12 @@
       "name": "Standard American",
       "widthMM": 57.5,
       "heightMM": 89,
-      "tagline": "Ticket to Ride \u00b7 Munchkin",
+      "tagline": "Wingspan \u00b7 Ticket to Ride",
       "blurb": "Narrower than a poker card at the same height. Also called Bridge size.",
       "examples": [
+        "Wingspan",
         "Ticket to Ride",
-        "Munchkin",
-        "Clank!"
+        "Munchkin"
       ]
     },
     {
@@ -62,8 +61,8 @@
       "blurb": "Also called Poker or Magic size. Fits standard TCG and most Euro-hybrid decks.",
       "examples": [
         "Magic: The Gathering",
-        "Wingspan",
-        "Spirit Island"
+        "Spirit Island",
+        "Forest Shuffle"
       ],
       "isCommon": true
     },
@@ -138,14 +137,9 @@
       "year": 2019,
       "decks": [
         {
-          "label": "Bird cards",
-          "count": 170,
-          "sizeID": "standard"
-        },
-        {
-          "label": "Bonus cards",
-          "count": 26,
-          "sizeID": "mini"
+          "label": "Bird, bonus & automa cards",
+          "count": 212,
+          "sizeID": "standard-american"
         }
       ]
     },
@@ -764,14 +758,9 @@
       "baseGameID": "wingspan",
       "decks": [
         {
-          "label": "Bird cards",
-          "count": 81,
-          "sizeID": "standard"
-        },
-        {
-          "label": "Bonus cards",
-          "count": 5,
-          "sizeID": "mini"
+          "label": "Bird & bonus cards",
+          "count": 86,
+          "sizeID": "standard-american"
         }
       ]
     },
@@ -786,14 +775,9 @@
       "baseGameID": "wingspan",
       "decks": [
         {
-          "label": "Bird cards",
-          "count": 95,
-          "sizeID": "standard"
-        },
-        {
-          "label": "Bonus cards",
-          "count": 6,
-          "sizeID": "mini"
+          "label": "Bird & bonus cards",
+          "count": 101,
+          "sizeID": "standard-american"
         }
       ]
     },
