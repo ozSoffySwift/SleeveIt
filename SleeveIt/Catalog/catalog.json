@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "updatedAt": "2026-07-22T00:00:00Z",
   "sizes": [
     {
@@ -7,36 +7,51 @@
       "name": "Mini American",
       "widthMM": 41,
       "heightMM": 63,
-      "tagline": "Marvel Champions · Eldritch Horror",
+      "tagline": "Marvel Champions \u00b7 Eldritch Horror",
       "blurb": "Small cards used for player aids, encounter decks and attack modifiers.",
-      "examples": ["Marvel Champions", "Eldritch Horror", "Gloomhaven"]
+      "examples": [
+        "Marvel Champions",
+        "Eldritch Horror",
+        "Gloomhaven"
+      ]
     },
     {
       "id": "mini-european",
       "name": "Mini European",
       "widthMM": 44,
       "heightMM": 68,
-      "tagline": "Race for the Galaxy · Dominion",
-      "blurb": "The common European mini size — slightly wider and taller than Mini American.",
-      "examples": ["Race for the Galaxy", "Dominion", "Concordia"]
+      "tagline": "Race for the Galaxy \u00b7 Dominion",
+      "blurb": "The common European mini size \u2014 slightly wider and taller than Mini American.",
+      "examples": [
+        "Race for the Galaxy",
+        "Dominion",
+        "Concordia"
+      ]
     },
     {
       "id": "mini",
       "name": "Mini",
       "widthMM": 43,
       "heightMM": 65,
-      "tagline": "Wingspan bonus cards · Everdell",
+      "tagline": "Wingspan bonus cards \u00b7 Everdell",
       "blurb": "Sits between the two mini standards. Worth checking before buying in bulk.",
-      "examples": ["Wingspan", "Everdell"]
+      "examples": [
+        "Wingspan",
+        "Everdell"
+      ]
     },
     {
       "id": "standard-american",
       "name": "Standard American",
       "widthMM": 57.5,
       "heightMM": 89,
-      "tagline": "Ticket to Ride · Munchkin",
+      "tagline": "Ticket to Ride \u00b7 Munchkin",
       "blurb": "Narrower than a poker card at the same height. Also called Bridge size.",
-      "examples": ["Ticket to Ride", "Munchkin", "Clank!"]
+      "examples": [
+        "Ticket to Ride",
+        "Munchkin",
+        "Clank!"
+      ]
     },
     {
       "id": "standard",
@@ -45,7 +60,11 @@
       "heightMM": 88,
       "tagline": "The most common size",
       "blurb": "Also called Poker or Magic size. Fits standard TCG and most Euro-hybrid decks.",
-      "examples": ["Magic: The Gathering", "Wingspan", "Spirit Island"],
+      "examples": [
+        "Magic: The Gathering",
+        "Wingspan",
+        "Spirit Island"
+      ],
       "isCommon": true
     },
     {
@@ -53,27 +72,38 @@
       "name": "Catan",
       "widthMM": 59,
       "heightMM": 92,
-      "tagline": "Catan · Carcassonne expansions",
+      "tagline": "Catan \u00b7 Carcassonne expansions",
       "blurb": "A wider, taller Euro card that will not fit a standard sleeve.",
-      "examples": ["Catan", "Carcassonne"]
+      "examples": [
+        "Catan",
+        "Carcassonne"
+      ]
     },
     {
       "id": "seven-wonders",
       "name": "7 Wonders",
       "widthMM": 65,
       "heightMM": 100,
-      "tagline": "7 Wonders · Terraforming Mars",
+      "tagline": "7 Wonders \u00b7 Terraforming Mars",
       "blurb": "Oversized Euro cards, often sold as \"Euro\" or \"Terraforming\" sleeves.",
-      "examples": ["7 Wonders", "Terraforming Mars", "Scythe"]
+      "examples": [
+        "7 Wonders",
+        "Terraforming Mars",
+        "Scythe"
+      ]
     },
     {
       "id": "tarot",
       "name": "Tarot",
       "widthMM": 70,
       "heightMM": 120,
-      "tagline": "Dixit · Mysterium",
-      "blurb": "Large illustrated cards — the biggest of the common standards.",
-      "examples": ["Dixit", "Mysterium", "Rising Sun"]
+      "tagline": "Dixit \u00b7 Mysterium",
+      "blurb": "Large illustrated cards \u2014 the biggest of the common standards.",
+      "examples": [
+        "Dixit",
+        "Mysterium",
+        "Rising Sun"
+      ]
     },
     {
       "id": "square",
@@ -81,8 +111,11 @@
       "widthMM": 70,
       "heightMM": 70,
       "tagline": "For square-card games",
-      "blurb": "Square sleeves are a specialty item — check stock before committing.",
-      "examples": ["Hive", "Tsuro"]
+      "blurb": "Square sleeves are a specialty item \u2014 check stock before committing.",
+      "examples": [
+        "Hive",
+        "Tsuro"
+      ]
     }
   ],
   "games": [
@@ -92,39 +125,70 @@
       "publisher": "Stonemaier Games",
       "year": 2019,
       "decks": [
-        { "label": "Bird cards", "count": 170, "sizeID": "standard" },
-        { "label": "Bonus cards", "count": 26, "sizeID": "mini" }
+        {
+          "label": "Bird cards",
+          "count": 170,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Bonus cards",
+          "count": 26,
+          "sizeID": "mini"
+        }
       ]
     },
     {
       "id": "catan",
       "title": "Catan",
-      "aliases": ["Settlers of Catan", "The Settlers of Catan"],
+      "aliases": [
+        "Settlers of Catan",
+        "The Settlers of Catan"
+      ],
       "publisher": "Kosmos",
       "year": 1995,
       "decks": [
-        { "label": "Resource cards", "count": 95, "sizeID": "catan" },
-        { "label": "Development cards", "count": 25, "sizeID": "catan" }
+        {
+          "label": "Resource cards",
+          "count": 95,
+          "sizeID": "catan"
+        },
+        {
+          "label": "Development cards",
+          "count": 25,
+          "sizeID": "catan"
+        }
       ]
     },
     {
       "id": "seven-wonders",
       "title": "7 Wonders",
-      "aliases": ["Seven Wonders"],
+      "aliases": [
+        "Seven Wonders"
+      ],
       "publisher": "Repos Production",
       "year": 2010,
       "decks": [
-        { "label": "Age cards", "count": 148, "sizeID": "seven-wonders" }
+        {
+          "label": "Age cards",
+          "count": 148,
+          "sizeID": "seven-wonders"
+        }
       ]
     },
     {
       "id": "seven-wonders-duel",
       "title": "7 Wonders Duel",
-      "aliases": ["Seven Wonders Duel"],
+      "aliases": [
+        "Seven Wonders Duel"
+      ],
       "publisher": "Repos Production",
       "year": 2015,
       "decks": [
-        { "label": "Age & wonder cards", "count": 89, "sizeID": "seven-wonders" }
+        {
+          "label": "Age & wonder cards",
+          "count": 89,
+          "sizeID": "seven-wonders"
+        }
       ]
     },
     {
@@ -133,9 +197,21 @@
       "publisher": "Cephalofair Games",
       "year": 2017,
       "decks": [
-        { "label": "Ability cards", "count": 508, "sizeID": "standard" },
-        { "label": "Attack modifier cards", "count": 434, "sizeID": "mini-american" },
-        { "label": "Item cards", "count": 133, "sizeID": "standard" }
+        {
+          "label": "Ability cards",
+          "count": 508,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Attack modifier cards",
+          "count": 434,
+          "sizeID": "mini-american"
+        },
+        {
+          "label": "Item cards",
+          "count": 133,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -144,8 +220,16 @@
       "publisher": "Cephalofair Games",
       "year": 2020,
       "decks": [
-        { "label": "Ability cards", "count": 130, "sizeID": "standard" },
-        { "label": "Attack modifier cards", "count": 160, "sizeID": "mini-american" }
+        {
+          "label": "Ability cards",
+          "count": 130,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Attack modifier cards",
+          "count": 160,
+          "sizeID": "mini-american"
+        }
       ]
     },
     {
@@ -154,7 +238,11 @@
       "publisher": "Libellud",
       "year": 2008,
       "decks": [
-        { "label": "Illustration cards", "count": 84, "sizeID": "tarot" }
+        {
+          "label": "Illustration cards",
+          "count": 84,
+          "sizeID": "tarot"
+        }
       ]
     },
     {
@@ -163,8 +251,16 @@
       "publisher": "Libellud",
       "year": 2015,
       "decks": [
-        { "label": "Vision cards", "count": 84, "sizeID": "tarot" },
-        { "label": "Character, location & object cards", "count": 54, "sizeID": "standard" }
+        {
+          "label": "Vision cards",
+          "count": 84,
+          "sizeID": "tarot"
+        },
+        {
+          "label": "Character, location & object cards",
+          "count": 54,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -173,8 +269,16 @@
       "publisher": "FryxGames",
       "year": 2016,
       "decks": [
-        { "label": "Project cards", "count": 208, "sizeID": "seven-wonders" },
-        { "label": "Corporation cards", "count": 12, "sizeID": "seven-wonders" }
+        {
+          "label": "Project cards",
+          "count": 208,
+          "sizeID": "seven-wonders"
+        },
+        {
+          "label": "Corporation cards",
+          "count": 12,
+          "sizeID": "seven-wonders"
+        }
       ]
     },
     {
@@ -183,8 +287,16 @@
       "publisher": "Days of Wonder",
       "year": 2004,
       "decks": [
-        { "label": "Train car cards", "count": 110, "sizeID": "standard-american" },
-        { "label": "Destination tickets", "count": 30, "sizeID": "standard-american" }
+        {
+          "label": "Train car cards",
+          "count": 110,
+          "sizeID": "standard-american"
+        },
+        {
+          "label": "Destination tickets",
+          "count": 30,
+          "sizeID": "standard-american"
+        }
       ]
     },
     {
@@ -193,8 +305,16 @@
       "publisher": "Days of Wonder",
       "year": 2005,
       "decks": [
-        { "label": "Train car cards", "count": 110, "sizeID": "standard-american" },
-        { "label": "Destination tickets", "count": 46, "sizeID": "standard-american" }
+        {
+          "label": "Train car cards",
+          "count": 110,
+          "sizeID": "standard-american"
+        },
+        {
+          "label": "Destination tickets",
+          "count": 46,
+          "sizeID": "standard-american"
+        }
       ]
     },
     {
@@ -203,28 +323,48 @@
       "publisher": "Starling Games",
       "year": 2018,
       "decks": [
-        { "label": "Critter & construction cards", "count": 128, "sizeID": "standard" },
-        { "label": "Special event cards", "count": 20, "sizeID": "mini" }
+        {
+          "label": "Critter & construction cards",
+          "count": 128,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Special event cards",
+          "count": 20,
+          "sizeID": "mini"
+        }
       ]
     },
     {
       "id": "marvel-champions",
       "title": "Marvel Champions: The Card Game",
-      "aliases": ["Marvel Champions"],
+      "aliases": [
+        "Marvel Champions"
+      ],
       "publisher": "Fantasy Flight Games",
       "year": 2019,
       "decks": [
-        { "label": "Player & encounter cards", "count": 364, "sizeID": "standard" }
+        {
+          "label": "Player & encounter cards",
+          "count": 364,
+          "sizeID": "standard"
+        }
       ]
     },
     {
       "id": "arkham-horror-lcg",
       "title": "Arkham Horror: The Card Game",
-      "aliases": ["Arkham Horror LCG"],
+      "aliases": [
+        "Arkham Horror LCG"
+      ],
       "publisher": "Fantasy Flight Games",
       "year": 2016,
       "decks": [
-        { "label": "Player & encounter cards", "count": 274, "sizeID": "standard" }
+        {
+          "label": "Player & encounter cards",
+          "count": 274,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -233,8 +373,16 @@
       "publisher": "Fantasy Flight Games",
       "year": 2013,
       "decks": [
-        { "label": "Encounter & mythos cards", "count": 254, "sizeID": "standard" },
-        { "label": "Asset & condition cards", "count": 152, "sizeID": "mini-american" }
+        {
+          "label": "Encounter & mythos cards",
+          "count": 254,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Asset & condition cards",
+          "count": 152,
+          "sizeID": "mini-american"
+        }
       ]
     },
     {
@@ -243,7 +391,11 @@
       "publisher": "Rio Grande Games",
       "year": 2008,
       "decks": [
-        { "label": "Kingdom, treasure & victory cards", "count": 500, "sizeID": "mini-european" }
+        {
+          "label": "Kingdom, treasure & victory cards",
+          "count": 500,
+          "sizeID": "mini-european"
+        }
       ]
     },
     {
@@ -252,7 +404,11 @@
       "publisher": "Rio Grande Games",
       "year": 2007,
       "decks": [
-        { "label": "Game cards", "count": 114, "sizeID": "mini-european" }
+        {
+          "label": "Game cards",
+          "count": 114,
+          "sizeID": "mini-european"
+        }
       ]
     },
     {
@@ -261,18 +417,32 @@
       "publisher": "Stonemaier Games",
       "year": 2016,
       "decks": [
-        { "label": "Encounter cards", "count": 28, "sizeID": "seven-wonders" },
-        { "label": "Objective & factory cards", "count": 35, "sizeID": "standard" }
+        {
+          "label": "Encounter cards",
+          "count": 28,
+          "sizeID": "seven-wonders"
+        },
+        {
+          "label": "Objective & factory cards",
+          "count": 35,
+          "sizeID": "standard"
+        }
       ]
     },
     {
       "id": "viticulture",
       "title": "Viticulture Essential Edition",
-      "aliases": ["Viticulture"],
+      "aliases": [
+        "Viticulture"
+      ],
       "publisher": "Stonemaier Games",
       "year": 2015,
       "decks": [
-        { "label": "Vine, wine order, summer & winter visitor cards", "count": 236, "sizeID": "standard" }
+        {
+          "label": "Vine, wine order, summer & winter visitor cards",
+          "count": 236,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -281,8 +451,16 @@
       "publisher": "Greater Than Games",
       "year": 2017,
       "decks": [
-        { "label": "Power cards", "count": 173, "sizeID": "standard" },
-        { "label": "Fear & event cards", "count": 63, "sizeID": "standard" }
+        {
+          "label": "Power cards",
+          "count": 173,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Fear & event cards",
+          "count": 63,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -291,7 +469,11 @@
       "publisher": "Roxley",
       "year": 2018,
       "decks": [
-        { "label": "Location & industry cards", "count": 72, "sizeID": "standard" }
+        {
+          "label": "Location & industry cards",
+          "count": 72,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -300,7 +482,11 @@
       "publisher": "Feuerland Spiele",
       "year": 2021,
       "decks": [
-        { "label": "Animal, sponsor & conservation cards", "count": 255, "sizeID": "standard" }
+        {
+          "label": "Animal, sponsor & conservation cards",
+          "count": 255,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -309,7 +495,11 @@
       "publisher": "Leder Games",
       "year": 2018,
       "decks": [
-        { "label": "Faction & item cards", "count": 74, "sizeID": "standard" }
+        {
+          "label": "Faction & item cards",
+          "count": 74,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -318,7 +508,11 @@
       "publisher": "Czech Games Edition",
       "year": 2020,
       "decks": [
-        { "label": "Item, artifact & guardian cards", "count": 111, "sizeID": "standard" }
+        {
+          "label": "Item, artifact & guardian cards",
+          "count": 111,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -327,7 +521,11 @@
       "publisher": "PD-Verlag",
       "year": 2013,
       "decks": [
-        { "label": "Personality & city cards", "count": 130, "sizeID": "mini-european" }
+        {
+          "label": "Personality & city cards",
+          "count": 130,
+          "sizeID": "mini-european"
+        }
       ]
     },
     {
@@ -336,7 +534,11 @@
       "publisher": "eggertspiele",
       "year": 2016,
       "decks": [
-        { "label": "Cattle & objective cards", "count": 92, "sizeID": "standard" }
+        {
+          "label": "Cattle & objective cards",
+          "count": 92,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -345,7 +547,11 @@
       "publisher": "Lookout Games",
       "year": 2007,
       "decks": [
-        { "label": "Occupation & minor improvement cards", "count": 360, "sizeID": "mini-european" }
+        {
+          "label": "Occupation & minor improvement cards",
+          "count": 360,
+          "sizeID": "mini-european"
+        }
       ]
     },
     {
@@ -354,16 +560,24 @@
       "publisher": "Ravensburger",
       "year": 2002,
       "decks": [
-        { "label": "Building & role cards", "count": 60, "sizeID": "standard" }
+        {
+          "label": "Building & role cards",
+          "count": 60,
+          "sizeID": "standard"
+        }
       ]
     },
     {
       "id": "carcassonne",
       "title": "Carcassonne",
-      "publisher": "Hans im Glück",
+      "publisher": "Hans im Gl\u00fcck",
       "year": 2000,
       "decks": [
-        { "label": "Scoring & expansion cards", "count": 30, "sizeID": "catan" }
+        {
+          "label": "Scoring & expansion cards",
+          "count": 30,
+          "sizeID": "catan"
+        }
       ]
     },
     {
@@ -372,7 +586,11 @@
       "publisher": "Z-Man Games",
       "year": 2008,
       "decks": [
-        { "label": "Player & infection cards", "count": 110, "sizeID": "standard" }
+        {
+          "label": "Player & infection cards",
+          "count": 110,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -381,7 +599,11 @@
       "publisher": "Plan B Games",
       "year": 2017,
       "decks": [
-        { "label": "Scoring & variant cards", "count": 12, "sizeID": "standard" }
+        {
+          "label": "Scoring & variant cards",
+          "count": 12,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -390,8 +612,16 @@
       "publisher": "Space Cowboys",
       "year": 2014,
       "decks": [
-        { "label": "Development cards", "count": 90, "sizeID": "standard" },
-        { "label": "Noble tiles", "count": 10, "sizeID": "square" }
+        {
+          "label": "Development cards",
+          "count": 90,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Noble tiles",
+          "count": 10,
+          "sizeID": "square"
+        }
       ]
     },
     {
@@ -400,7 +630,11 @@
       "publisher": "White Wizard Games",
       "year": 2014,
       "decks": [
-        { "label": "Ship & base cards", "count": 128, "sizeID": "standard" }
+        {
+          "label": "Ship & base cards",
+          "count": 128,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -409,7 +643,11 @@
       "publisher": "Renegade Game Studios",
       "year": 2016,
       "decks": [
-        { "label": "Dungeon & reserve cards", "count": 188, "sizeID": "standard" }
+        {
+          "label": "Dungeon & reserve cards",
+          "count": 188,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -418,18 +656,33 @@
       "publisher": "Czech Games Edition",
       "year": 2015,
       "decks": [
-        { "label": "Word cards", "count": 200, "sizeID": "standard" },
-        { "label": "Key cards", "count": 40, "sizeID": "standard" }
+        {
+          "label": "Word cards",
+          "count": 200,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Key cards",
+          "count": 40,
+          "sizeID": "standard"
+        }
       ]
     },
     {
       "id": "sushi-go-party",
       "title": "Sushi Go Party!",
-      "aliases": ["Sushi Go", "Sushi Go!"],
+      "aliases": [
+        "Sushi Go",
+        "Sushi Go!"
+      ],
       "publisher": "Gamewright",
       "year": 2016,
       "decks": [
-        { "label": "Sushi cards", "count": 181, "sizeID": "standard" }
+        {
+          "label": "Sushi cards",
+          "count": 181,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -438,7 +691,11 @@
       "publisher": "Space Cowboys",
       "year": 2009,
       "decks": [
-        { "label": "Goods & camel cards", "count": 55, "sizeID": "standard" }
+        {
+          "label": "Goods & camel cards",
+          "count": 55,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -447,7 +704,11 @@
       "publisher": "Lookout Games",
       "year": 2014,
       "decks": [
-        { "label": "Special tile & scoring cards", "count": 6, "sizeID": "standard" }
+        {
+          "label": "Special tile & scoring cards",
+          "count": 6,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -456,41 +717,72 @@
       "publisher": "Sand Castle Games",
       "year": 2019,
       "decks": [
-        { "label": "Artifact, mage & monument cards", "count": 106, "sizeID": "standard" }
+        {
+          "label": "Artifact, mage & monument cards",
+          "count": 106,
+          "sizeID": "standard"
+        }
       ]
     },
     {
       "id": "magic-the-gathering",
       "title": "Magic: The Gathering",
-      "aliases": ["MTG", "Magic"],
+      "aliases": [
+        "MTG",
+        "Magic"
+      ],
       "publisher": "Wizards of the Coast",
       "year": 1993,
       "decks": [
-        { "label": "Cards (per 60-card deck)", "count": 60, "sizeID": "standard" }
+        {
+          "label": "Cards (per 60-card deck)",
+          "count": 60,
+          "sizeID": "standard"
+        }
       ]
     },
     {
       "id": "wingspan-european",
       "title": "Wingspan: European Expansion",
-      "aliases": ["Wingspan European"],
+      "aliases": [
+        "Wingspan European"
+      ],
       "publisher": "Stonemaier Games",
       "year": 2019,
       "baseGameID": "wingspan",
       "decks": [
-        { "label": "Bird cards", "count": 81, "sizeID": "standard" },
-        { "label": "Bonus cards", "count": 5, "sizeID": "mini" }
+        {
+          "label": "Bird cards",
+          "count": 81,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Bonus cards",
+          "count": 5,
+          "sizeID": "mini"
+        }
       ]
     },
     {
       "id": "wingspan-oceania",
       "title": "Wingspan: Oceania Expansion",
-      "aliases": ["Wingspan Oceania"],
+      "aliases": [
+        "Wingspan Oceania"
+      ],
       "publisher": "Stonemaier Games",
       "year": 2020,
       "baseGameID": "wingspan",
       "decks": [
-        { "label": "Bird cards", "count": 95, "sizeID": "standard" },
-        { "label": "Bonus cards", "count": 6, "sizeID": "mini" }
+        {
+          "label": "Bird cards",
+          "count": 95,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Bonus cards",
+          "count": 6,
+          "sizeID": "mini"
+        }
       ]
     },
     {
@@ -500,7 +792,11 @@
       "year": 2006,
       "baseGameID": "ticket-to-ride",
       "decks": [
-        { "label": "Destination tickets", "count": 35, "sizeID": "standard-american" }
+        {
+          "label": "Destination tickets",
+          "count": 35,
+          "sizeID": "standard-american"
+        }
       ]
     },
     {
@@ -510,7 +806,11 @@
       "year": 2019,
       "baseGameID": "everdell",
       "decks": [
-        { "label": "Adornment & river cards", "count": 38, "sizeID": "standard" }
+        {
+          "label": "Adornment & river cards",
+          "count": 38,
+          "sizeID": "standard"
+        }
       ]
     },
     {
@@ -520,8 +820,493 @@
       "year": 2019,
       "baseGameID": "gloomhaven",
       "decks": [
-        { "label": "Ability & item cards", "count": 100, "sizeID": "standard" },
-        { "label": "Attack modifier cards", "count": 40, "sizeID": "mini-american" }
+        {
+          "label": "Ability & item cards",
+          "count": 100,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Attack modifier cards",
+          "count": 40,
+          "sizeID": "mini-american"
+        }
+      ]
+    },
+    {
+      "id": "lost-cities",
+      "title": "Lost Cities",
+      "publisher": "Kosmos",
+      "year": 1999,
+      "decks": [
+        {
+          "label": "Expedition cards",
+          "count": 60,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "love-letter",
+      "title": "Love Letter",
+      "publisher": "Z-Man Games",
+      "year": 2012,
+      "decks": [
+        {
+          "label": "Character cards",
+          "count": 21,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "coup",
+      "title": "Coup",
+      "publisher": "Indie Boards & Cards",
+      "year": 2012,
+      "decks": [
+        {
+          "label": "Character cards",
+          "count": 15,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "the-crew",
+      "title": "The Crew: The Quest for Planet Nine",
+      "publisher": "Kosmos",
+      "year": 2019,
+      "aliases": [
+        "The Crew"
+      ],
+      "decks": [
+        {
+          "label": "Playing & task cards",
+          "count": 50,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "hanabi",
+      "title": "Hanabi",
+      "publisher": "R&R Games",
+      "year": 2010,
+      "decks": [
+        {
+          "label": "Firework cards",
+          "count": 50,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "skull-king",
+      "title": "Skull King",
+      "publisher": "Grandpa Beck's Games",
+      "year": 2013,
+      "decks": [
+        {
+          "label": "Playing cards",
+          "count": 74,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "exploding-kittens",
+      "title": "Exploding Kittens",
+      "publisher": "Exploding Kittens",
+      "year": 2015,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 56,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "bang",
+      "title": "Bang!",
+      "publisher": "dV Giochi",
+      "year": 2002,
+      "decks": [
+        {
+          "label": "Playing, character & role cards",
+          "count": 110,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "machi-koro",
+      "title": "Machi Koro",
+      "publisher": "Pandasaurus Games",
+      "year": 2012,
+      "decks": [
+        {
+          "label": "Establishment & landmark cards",
+          "count": 108,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "the-mind",
+      "title": "The Mind",
+      "publisher": "Pandasaurus Games",
+      "year": 2018,
+      "decks": [
+        {
+          "label": "Number cards",
+          "count": 100,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "dune-imperium",
+      "title": "Dune: Imperium",
+      "publisher": "Dire Wolf",
+      "year": 2020,
+      "aliases": [
+        "Dune Imperium"
+      ],
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 211,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "clank-catacombs",
+      "title": "Clank! Catacombs",
+      "publisher": "Renegade Game Studios",
+      "year": 2022,
+      "decks": [
+        {
+          "label": "Dungeon & reserve cards",
+          "count": 188,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "aeons-end",
+      "title": "Aeon's End",
+      "publisher": "Indie Boards & Cards",
+      "year": 2016,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 395,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "marvel-united",
+      "title": "Marvel United",
+      "publisher": "CMON",
+      "year": 2020,
+      "decks": [
+        {
+          "label": "Hero & villain cards",
+          "count": 250,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "unmatched",
+      "title": "Unmatched: Battle of Legends",
+      "publisher": "Restoration Games",
+      "year": 2019,
+      "aliases": [
+        "Unmatched"
+      ],
+      "decks": [
+        {
+          "label": "Character cards",
+          "count": 95,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "betrayal",
+      "title": "Betrayal at House on the Hill",
+      "publisher": "Avalon Hill",
+      "year": 2004,
+      "decks": [
+        {
+          "label": "Omen, event & item cards",
+          "count": 149,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "mansions-of-madness",
+      "title": "Mansions of Madness: Second Edition",
+      "publisher": "Fantasy Flight Games",
+      "year": 2016,
+      "aliases": [
+        "Mansions of Madness"
+      ],
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 203,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Small cards",
+          "count": 90,
+          "sizeID": "mini-american"
+        }
+      ]
+    },
+    {
+      "id": "twilight-imperium",
+      "title": "Twilight Imperium: Fourth Edition",
+      "publisher": "Fantasy Flight Games",
+      "year": 2017,
+      "aliases": [
+        "Twilight Imperium"
+      ],
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 340,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "gaia-project",
+      "title": "Gaia Project",
+      "publisher": "Feuerland Spiele",
+      "year": 2017,
+      "decks": [
+        {
+          "label": "Tech & scoring cards",
+          "count": 60,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "cartographers",
+      "title": "Cartographers",
+      "publisher": "Thunderworks Games",
+      "year": 2019,
+      "decks": [
+        {
+          "label": "Explore, scoring & ambush cards",
+          "count": 44,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "roll-player",
+      "title": "Roll Player",
+      "publisher": "Thunderworks Games",
+      "year": 2016,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 200,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "earth",
+      "title": "Earth",
+      "publisher": "Inside Up Games",
+      "year": 2023,
+      "decks": [
+        {
+          "label": "Ecosystem & fauna cards",
+          "count": 264,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "wyrmspan",
+      "title": "Wyrmspan",
+      "publisher": "Stonemaier Games",
+      "year": 2024,
+      "decks": [
+        {
+          "label": "Dragon cards",
+          "count": 183,
+          "sizeID": "standard"
+        },
+        {
+          "label": "Guild cards",
+          "count": 17,
+          "sizeID": "mini"
+        }
+      ]
+    },
+    {
+      "id": "lords-of-waterdeep",
+      "title": "Lords of Waterdeep",
+      "publisher": "Wizards of the Coast",
+      "year": 2012,
+      "decks": [
+        {
+          "label": "Intrigue & quest cards",
+          "count": 111,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "cosmic-encounter",
+      "title": "Cosmic Encounter",
+      "publisher": "Fantasy Flight Games",
+      "year": 2008,
+      "decks": [
+        {
+          "label": "Cards",
+          "count": 162,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "innovation",
+      "title": "Innovation",
+      "publisher": "Asmadi Games",
+      "year": 2010,
+      "decks": [
+        {
+          "label": "Innovation cards",
+          "count": 110,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "lorcana",
+      "title": "Disney Lorcana",
+      "publisher": "Ravensburger",
+      "year": 2023,
+      "aliases": [
+        "Lorcana"
+      ],
+      "decks": [
+        {
+          "label": "Cards (per 60-card deck)",
+          "count": 60,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "flesh-and-blood",
+      "title": "Flesh and Blood",
+      "publisher": "Legend Story Studios",
+      "year": 2019,
+      "decks": [
+        {
+          "label": "Cards (per deck)",
+          "count": 80,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "star-wars-unlimited",
+      "title": "Star Wars: Unlimited",
+      "publisher": "Fantasy Flight Games",
+      "year": 2024,
+      "aliases": [
+        "Star Wars Unlimited"
+      ],
+      "decks": [
+        {
+          "label": "Cards (per 50-card deck)",
+          "count": 50,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "parks",
+      "title": "PARKS",
+      "publisher": "Keymaster Games",
+      "year": 2019,
+      "decks": [
+        {
+          "label": "Park, gear & canteen cards",
+          "count": 108,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "fantasy-realms",
+      "title": "Fantasy Realms",
+      "publisher": "WizKids",
+      "year": 2017,
+      "decks": [
+        {
+          "label": "Realm cards",
+          "count": 53,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "point-salad",
+      "title": "Point Salad",
+      "publisher": "AEG",
+      "year": 2019,
+      "decks": [
+        {
+          "label": "Vegetable & scoring cards",
+          "count": 108,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "just-one",
+      "title": "Just One",
+      "publisher": "Repos Production",
+      "year": 2018,
+      "decks": [
+        {
+          "label": "Mystery cards",
+          "count": 130,
+          "sizeID": "standard"
+        }
+      ]
+    },
+    {
+      "id": "avalon",
+      "title": "The Resistance: Avalon",
+      "publisher": "Indie Boards & Cards",
+      "year": 2012,
+      "aliases": [
+        "Avalon",
+        "The Resistance"
+      ],
+      "decks": [
+        {
+          "label": "Character & quest cards",
+          "count": 38,
+          "sizeID": "standard"
+        }
       ]
     }
   ]

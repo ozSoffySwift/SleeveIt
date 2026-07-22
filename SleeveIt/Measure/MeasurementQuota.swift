@@ -15,17 +15,30 @@ import Combine
 final class MeasurementQuota: ObservableObject {
     static let freeDailyLimit = 5
 
+    /// The daily cap goes live on this date (local time). Until then measuring
+    /// is unlimited, so the app can be tested freely before release.
+    static let enforcementStart = DateComponents(year: 2026, month: 8, day: 1)
+
     static let shared = MeasurementQuota()
 
     @Published private(set) var usedToday: Int = 0
 
-    /// Pro lifts the cap entirely. Sourced from `Entitlements` so there is one
+    /// Whether the dated cap has come into force yet.
+    var isEnforced: Bool {
+        guard let start = calendar.date(from: Self.enforcementStart) else { return true }
+        return now() >= calendar.startOfDay(for: start)
+    }
+
+    /// Pro lifts the cap entirely; before `enforcementStart` everyone is
+    /// effectively unlimited. Sourced from `Entitlements` so there is one
     /// switch for every paid capability, not one per feature.
-    var isUnlimited: Bool { entitlements.isPro }
+    var isUnlimited: Bool { entitlements.isPro || !isEnforced }
 
     private let entitlements: Entitlements
     private let defaults: UserDefaults
     private let calendar: Calendar
+    /// Injectable clock so tests can sit on either side of `enforcementStart`.
+    private let now: () -> Date
 
     private enum Key {
         static let count = "quota.usedToday"
@@ -35,11 +48,13 @@ final class MeasurementQuota: ObservableObject {
     init(
         defaults: UserDefaults = .standard,
         calendar: Calendar = .current,
-        entitlements: Entitlements = .shared
+        entitlements: Entitlements = .shared,
+        now: @escaping () -> Date = { .now }
     ) {
         self.defaults = defaults
         self.calendar = calendar
         self.entitlements = entitlements
+        self.now = now
         rolloverIfNeeded()
     }
 
@@ -55,7 +70,7 @@ final class MeasurementQuota: ObservableObject {
 
     /// When the allowance next resets, for the "come back tomorrow" copy.
     var resetsAt: Date {
-        calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: .now) ?? .now)
+        calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now()) ?? now())
     }
 
     /// Records one completed AR measurement. Safe to call when unlimited — it
@@ -72,7 +87,7 @@ final class MeasurementQuota: ObservableObject {
     /// Called on every read path rather than scheduled, so the allowance is
     /// correct after the app has been backgrounded across midnight.
     func rolloverIfNeeded() {
-        let today = calendar.startOfDay(for: .now)
+        let today = calendar.startOfDay(for: now())
         let storedDay = defaults.object(forKey: Key.day) as? Date
 
         guard let storedDay, calendar.isDate(storedDay, inSameDayAs: today) else {

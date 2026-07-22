@@ -14,9 +14,9 @@ SwiftUI · SwiftData · ARKit · Vision · WidgetKit · App Intents · iOS 17+ �
 
 ## Screenshots
 
-| Search | Measure result | My List |
+| Measure | Game detail | My List |
 |:---:|:---:|:---:|
-| ![Search](Marketing/Search_1242x2688.png) | ![Game detail](Marketing/GameDetail_1242x2688.png) | ![My List](Marketing/MyList_1242x2688.png) |
+| ![Measure](Marketing/Measure_1242x2688.png) | ![Game detail](Marketing/GameDetail_1242x2688.png) | ![My List](Marketing/MyList_1242x2688.png) |
 
 | Reference | Settings |
 |:---:|:---:|
@@ -45,7 +45,7 @@ SwiftUI · SwiftData · ARKit · Vision · WidgetKit · App Intents · iOS 17+ �
    without them:
    - **BoardGameGeek import** needs a registered API token — add `Support/BGGToken.plist` with a
      `token` string key (git-ignored; see [`BGGConfiguration`](SleeveIt/BGG/BGGConfiguration.swift)).
-   - **Catalog updates** and **corrections** point at placeholder endpoints you host yourself.
+   - **Catalog updates** are live — served from this repo's GitHub Pages (see Catalog updates below). **Corrections** still point at a placeholder endpoint you host yourself.
    - **App Group / iCloud** capabilities must be enabled in your developer account for device builds.
 
 Nothing secret is committed: no API tokens, no signing team, no provisioning profiles (see
@@ -78,19 +78,21 @@ The app icon is derived from `Marketing/SleeveIt icon.png`. That source is a pre
 
 Vision finds the card's quadrilateral in the camera frame; ARKit raycasts those four corners onto the detected table plane. Vision alone gives pixels, ARKit alone measures wherever the user aimed — together they measure the card actually on the table, in real millimetres.
 
-Per-frame geometry is noisy, so `MeasurementStabilizer` holds a rolling window and only reports a lock once the spread across it is under 0.8mm, taking the median so one bad raycast can't skew the result. Opposite edges are averaged to cancel perspective skew, and quads whose opposite edges disagree by more than 4mm are discarded as mis-detections.
+Per-frame geometry is noisy, so locking is two-staged: `MeasurementStabilizer` acquires a candidate (6 samples within 2mm), then a one-second confirm window in which frames only need to agree with the candidate within 3mm — the final value is the median of every confirming sample. Opposite edges are averaged to cancel perspective skew, and non-planar quads are discarded as mis-detections.
 
 Works on any ARKit device; LiDAR improves plane depth but isn't required. **Requires a physical device** — the simulator has no camera, so it falls through to the manual-entry path.
 
 ## Catalog updates
 
-The bundled `Catalog/catalog.json` seeds the store on first launch. `CatalogStore.refresh()` then fetches a newer version from `CatalogStore.remoteURL` — **change that constant to a host you control** (S3, R2, GitHub Pages; any static file works).
+The bundled `Catalog/catalog.json` seeds the store on first launch. `CatalogStore.refresh()` then fetches a newer version from GitHub Pages — this repo serves its own catalog from `docs/catalog/catalog.json` at `https://ozsoffyswift.github.io/SleeveIt/catalog/catalog.json`.
+
+**To ship new games without an App Store release:** edit `SleeveIt/Catalog/catalog.json`, bump `version`, run `Scripts/publish-catalog.sh`, commit and push. Every installed app picks it up on next launch (or via Settings → Update catalog).
 
 Serve the same JSON shape with an incremented `version`. The client sends `If-None-Match`, so an unchanged catalog costs a 304 with no body. A payload is only applied when its `version` is greater than the installed one, so a bad deploy is rolled back by publishing a higher version with corrected data. Every failure path is non-fatal: the last good catalog stays in place and the app remains fully usable offline.
 
 ### Catalog data accuracy
 
-The seed ships 40 games and 9 sleeve standards. **Card counts need verifying before you ship.** They were compiled from general knowledge of these games, not transcribed from a authoritative source, and counts legitimately vary between printings, editions and localisations — a second-edition box often differs from the first. Treat the numbers as a strong starting point, not ground truth. The app already tells users sizes vary by printing, but a wrong count means someone buys the wrong number of sleeves.
+The seed ships 79 games (expansions included) and 9 sleeve standards. **Card counts need verifying before you ship.** They were compiled from general knowledge of these games, not transcribed from a authoritative source, and counts legitimately vary between printings, editions and localisations — a second-edition box often differs from the first. Treat the numbers as a strong starting point, not ground truth. The app already tells users sizes vary by printing, but a wrong count means someone buys the wrong number of sleeves.
 
 Cross-checking against the [Card Size Database geeklist](https://boardgamegeek.com/geeklist/48357/card-size-database) is the fastest way to firm them up.
 

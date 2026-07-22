@@ -23,14 +23,20 @@ struct CardMeasurement: Equatable {
 /// across that window is tight enough to be meaningful.
 struct MeasurementStabilizer {
     /// Samples required before a lock can be reported.
-    var windowSize: Int = 12
+    var windowSize: Int = 6
 
     /// Maximum peak-to-peak spread, in mm, for a window to count as stable.
-    var toleranceMM: Double = 0.8
+    ///
+    /// 2mm is loose enough for a handheld phone to acquire a candidate quickly,
+    /// and still tighter than the gap between neighbouring sleeve standards —
+    /// the median of the window plus nearest-size snapping keeps the
+    /// recommendation correct. The 1-second confirm stage that follows is what
+    /// guards against locking on a bad reading.
+    var toleranceMM: Double = 2.0
 
     private var samples: [CardMeasurement] = []
 
-    init(windowSize: Int = 12, toleranceMM: Double = 0.8) {
+    init(windowSize: Int = 6, toleranceMM: Double = 2.0) {
         self.windowSize = windowSize
         self.toleranceMM = toleranceMM
     }

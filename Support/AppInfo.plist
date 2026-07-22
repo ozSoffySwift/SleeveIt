@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	iPhone-only, for real. TARGETED_DEVICE_FAMILY = 1 only makes the app
+	*designed* for iPhone — the App Store still offers such apps to iPads in
+	compatibility mode. Requiring telephony (which no iPad has) is the
+	mechanism that removes it from the iPad store entirely.
+	-->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+		<string>telephony</string>
+	</array>
+</dict>
+</plist>

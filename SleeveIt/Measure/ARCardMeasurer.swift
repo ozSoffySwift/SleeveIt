@@ -1,8 +1,16 @@
 import ARKit
 import Combine
+import CoreImage
+import UIKit
 import Vision
 import simd
 import os
+
+private let measureLogger = Logger(subsystem: "com.sleeveit.SleeveIt", category: "measure")
+
+/// Shared context for cropping card snapshots; CIContext is expensive to create
+/// and thread-safe to reuse.
+private let snapshotContext = CIContext()
 
 /// Drives the AR session and turns camera frames into real-world card dimensions.
 ///
@@ -37,20 +45,78 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         }
     }
 
+    /// One processed frame's outcome: the physical size plus where the card sits
+    /// on screen, so the UI can draw its frame on the card rather than centred.
+    struct DetectionResult {
+        var measurement: CardMeasurement
+        /// TL, TR, BR, BL in view points. Empty until the viewport size is known.
+        var viewQuad: [CGPoint]
+        /// A crop of the card from this frame, captured only while the lock
+        /// countdown runs, so the locked screen can present the card itself.
+        var cardImage: CGImage?
+    }
+
     @Published private(set) var phase: Phase = .findingSurface
+    /// The detected card's corners in view coordinates, for drawing the scan
+    /// frame on the card itself. Retains its last value after a lock so the
+    /// locked overlay stays on the card.
+    @Published private(set) var cardQuad: [CGPoint]?
+    /// A sharp crop of the measured card from the confirming second, shown
+    /// centred with a border on the locked screen.
+    @Published private(set) var lockedCardImage: UIImage?
     @Published var isTorchOn = false
+
+    /// A settled measurement must hold steady for this long before locking.
+    /// Locking on the first stable window froze whatever frame happened to be
+    /// current — often blurred mid-focus; a full second forces a genuinely
+    /// steady hand and gives autofocus time to land, so the final frame and the
+    /// card snapshot are sharp.
+    private let lockConfirmation: TimeInterval = 1.0
+
+    /// During the countdown, frames only need to agree with the candidate
+    /// within this much per edge. Requiring the full stability window to keep
+    /// passing on every frame meant one micro-jitter restarted the countdown —
+    /// which is why locks almost never completed handheld.
+    private let confirmToleranceMM: Double = 3.0
+
+    /// Vision can briefly lose the card mid-countdown (glare, a finger edge);
+    /// tolerate a few missed frames before abandoning the lock attempt.
+    private let confirmMissGrace = 5
+
+    private var settledSince: Date?
+    private var lockCandidate: CardMeasurement?
+    private var confirmSamples: [CardMeasurement] = []
+    private var confirmMisses = 0
+    private var candidateSnapshot: CGImage?
 
     let session = ARSession()
 
-    private let logger = Logger(subsystem: "com.sleeveit.SleeveIt", category: "measure")
     private var stabilizer = MeasurementStabilizer()
-    private var isProcessingFrame = false
     private var lastDetectionAt: Date?
     private var hasPlane = false
     private var startedAt: Date?
 
     /// Frames without a card before we surface the error sheet.
     private let lostCardGrace: TimeInterval = 6
+
+    /// Vision runs here, off the main thread. Frames that arrive while one is
+    /// being processed are DROPPED, never queued — queued work retains ARFrames,
+    /// and ARKit throttles its camera pipeline when frames are held back.
+    nonisolated private let visionQueue = DispatchQueue(
+        label: "com.sleeveit.SleeveIt.vision", qos: .userInitiated)
+    nonisolated private let frameGate = OSAllocatedUnfairLock(initialState: false)
+    nonisolated private let isMeasuring = OSAllocatedUnfairLock(initialState: false)
+    /// The on-screen size the camera renders into, needed to map detected
+    /// corners into view coordinates. Fed by the view via `setViewport`.
+    nonisolated private let viewportStore = OSAllocatedUnfairLock(initialState: CGSize.zero)
+    /// True only during the lock countdown, so card snapshots are cropped just
+    /// for the handful of frames that might become the locked image.
+    nonisolated private let wantSnapshot = OSAllocatedUnfairLock(initialState: false)
+
+    /// The view calls this with the full-screen size the camera fills.
+    func setViewport(_ size: CGSize) {
+        viewportStore.withLock { $0 = size }
+    }
 
     static var isSupported: Bool { ARWorldTrackingConfiguration.isSupported }
 
@@ -75,7 +141,11 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         hasPlane = false
         lastDetectionAt = nil
         startedAt = .now
+        cardQuad = nil
+        lockedCardImage = nil
+        cancelLockCountdown()
         phase = .findingSurface
+        isMeasuring.withLock { $0 = true }
 
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal]
@@ -87,6 +157,7 @@ final class ARCardMeasurer: NSObject, ObservableObject {
     }
 
     func stop() {
+        isMeasuring.withLock { $0 = false }
         session.pause()
         setTorch(on: false)
     }
@@ -96,6 +167,10 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         stabilizer.reset()
         lastDetectionAt = nil
         startedAt = .now
+        cardQuad = nil
+        lockedCardImage = nil
+        cancelLockCountdown()
+        isMeasuring.withLock { $0 = true }
         phase = hasPlane ? .searching : .findingSurface
     }
 
@@ -113,41 +188,133 @@ final class ARCardMeasurer: NSObject, ObservableObject {
             device.unlockForConfiguration()
             isTorchOn = on
         } catch {
-            logger.error("Torch unavailable: \(error.localizedDescription)")
+            measureLogger.error("Torch unavailable: \(error.localizedDescription)")
         }
     }
 
-    // MARK: - Frame processing
+    // MARK: - Ingest (main actor)
 
-    fileprivate func process(frame: ARFrame) {
-        guard !isProcessingFrame else { return }
-        guard case .locked = phase else {
-            isProcessingFrame = true
-            detectCard(in: frame)
+    /// Takes one processed frame's outcome and advances the state machine.
+    ///
+    /// Two stages: **acquire** (the stabilizer finds a steady candidate), then
+    /// **confirm** (hold for `lockConfirmation`, during which frames only need
+    /// to agree with the candidate within `confirmToleranceMM`). The final lock
+    /// is the median of every confirming sample.
+    private func ingest(_ result: DetectionResult?) {
+        if case .locked = phase { return }
+
+        guard let result else {
+            // Tolerate brief detection dropouts mid-countdown rather than
+            // abandoning an almost-complete lock.
+            if lockCandidate != nil, confirmMisses < confirmMissGrace {
+                confirmMisses += 1
+                return
+            }
+            noteMissingCard()
             return
         }
-    }
 
-    private func detectCard(in frame: ARFrame) {
-        let request = VNDetectRectanglesRequest { [weak self] request, error in
-            Task { @MainActor in
-                defer { self?.isProcessingFrame = false }
-                guard let self else { return }
-                if let error {
-                    self.logger.error("Vision failed: \(error.localizedDescription)")
-                    return
-                }
-                let observations = (request.results as? [VNRectangleObservation]) ?? []
-                self.handle(observations: observations, frame: frame)
-            }
+        lastDetectionAt = .now
+        confirmMisses = 0
+        if result.viewQuad.count == 4 {
+            cardQuad = result.viewQuad
+        }
+        if let image = result.cardImage {
+            candidateSnapshot = image
         }
 
-        // Playing cards run roughly 0.55–0.75 aspect; allow slack for perspective.
+        let measurement = result.measurement.normalized
+
+        // --- Confirm stage ---
+        if let candidate = lockCandidate, let since = settledSince {
+            let agrees = abs(measurement.widthMM - candidate.widthMM) <= confirmToleranceMM
+                && abs(measurement.heightMM - candidate.heightMM) <= confirmToleranceMM
+
+            guard agrees else {
+                // The reading genuinely jumped — start acquisition over.
+                cancelLockCountdown()
+                stabilizer.reset()
+                _ = stabilizer.accept(result.measurement)
+                phase = .detecting(measurement)
+                return
+            }
+
+            confirmSamples.append(measurement)
+
+            if Date.now.timeIntervalSince(since) >= lockConfirmation {
+                let final = Self.median(of: confirmSamples) ?? candidate
+                if let snapshot = candidateSnapshot {
+                    lockedCardImage = UIImage(cgImage: snapshot)
+                }
+                phase = .locked(final)
+                stop()
+            } else {
+                phase = .detecting(measurement)
+            }
+            return
+        }
+
+        // --- Acquire stage ---
+        if let settled = stabilizer.accept(result.measurement) {
+            lockCandidate = settled
+            settledSince = .now
+            confirmSamples = [settled]
+            wantSnapshot.withLock { $0 = true }
+            phase = .detecting(settled.normalized)
+        } else {
+            phase = .detecting(measurement)
+        }
+    }
+
+    /// Per-dimension median — robust to the odd outlier in the confirm window.
+    nonisolated static func median(of samples: [CardMeasurement]) -> CardMeasurement? {
+        guard !samples.isEmpty else { return nil }
+        let width = samples.map(\.widthMM).sorted()[samples.count / 2]
+        let height = samples.map(\.heightMM).sorted()[samples.count / 2]
+        let confidence = samples.map(\.confidence).max() ?? 0.5
+        return CardMeasurement(widthMM: width, heightMM: height, confidence: confidence)
+    }
+
+    private func cancelLockCountdown() {
+        settledSince = nil
+        lockCandidate = nil
+        confirmSamples = []
+        confirmMisses = 0
+        candidateSnapshot = nil
+        wantSnapshot.withLock { $0 = false }
+    }
+
+    private func noteMissingCard() {
+        stabilizer.reset()
+        cardQuad = nil
+        cancelLockCountdown()
+
+        guard let since = lastDetectionAt ?? startedAt else { return }
+        if Date.now.timeIntervalSince(since) > lostCardGrace {
+            if case .failed = phase { return }
+            phase = .failed(.lostCard)
+        } else if hasPlane, case .findingSurface = phase {
+            phase = .searching
+        } else if case .detecting = phase {
+            phase = .searching
+        }
+    }
+
+    // MARK: - Detection (background)
+
+    /// Runs Vision on one frame and measures the best rectangle, if any.
+    nonisolated static func measureCard(
+        in frame: ARFrame, session: ARSession, viewport: CGSize, includeSnapshot: Bool
+    ) -> DetectionResult? {
+        let request = VNDetectRectanglesRequest()
+        // Playing cards run roughly 0.55–0.75 shorter/longer edge; allow slack
+        // for perspective. Vision's aspect is orientation-neutral, so sideways
+        // cards pass too.
         request.minimumAspectRatio = 0.45
         request.maximumAspectRatio = 0.95
-        request.minimumSize = 0.15
-        request.minimumConfidence = 0.7
-        request.maximumObservations = 3
+        request.minimumSize = 0.12
+        request.minimumConfidence = 0.6
+        request.maximumObservations = 5
         request.quadratureTolerance = 20
 
         let handler = VNImageRequestHandler(
@@ -159,34 +326,32 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         do {
             try handler.perform([request])
         } catch {
-            isProcessingFrame = false
-            logger.error("Vision handler failed: \(error.localizedDescription)")
+            measureLogger.error("Vision failed: \(error.localizedDescription)")
+            return nil
         }
+
+        guard let best = (request.results ?? []).max(by: { $0.confidence < $1.confidence }) else {
+            return nil
+        }
+        return measure(observation: best, frame: frame, session: session, viewport: viewport, includeSnapshot: includeSnapshot)
     }
 
-    private func handle(observations: [VNRectangleObservation], frame: ARFrame) {
-        guard let best = observations.max(by: { $0.confidence < $1.confidence }) else {
-            noteMissingCard()
-            return
-        }
-        guard let measurement = measure(observation: best, frame: frame) else {
-            noteMissingCard()
-            return
-        }
-
-        lastDetectionAt = .now
-
-        if let settled = stabilizer.accept(measurement) {
-            phase = .locked(settled)
-            stop()
-        } else {
-            phase = .detecting(measurement.normalized)
-        }
-    }
-
-    /// Projects the observed rectangle's corners onto the AR plane and measures
-    /// the resulting quad in world space.
-    private func measure(observation: VNRectangleObservation, frame: ARFrame) -> CardMeasurement? {
+    /// Measures the observed rectangle against the surface it's resting on.
+    ///
+    /// **One plane, four analytic intersections.** Raycasting each corner
+    /// independently lets ARKit resolve each to a slightly different estimated
+    /// depth, which warps the quad and skews the size. Instead the card's plane
+    /// is established once — a single raycast through the quad's centre,
+    /// preferring real detected plane geometry — and each corner's camera ray
+    /// (from the camera intrinsics) is intersected with that plane. The corners
+    /// are coplanar by construction, so edge lengths are consistent.
+    nonisolated private static func measure(
+        observation: VNRectangleObservation,
+        frame: ARFrame,
+        session: ARSession,
+        viewport: CGSize,
+        includeSnapshot: Bool
+    ) -> DetectionResult? {
         let corners = [
             observation.topLeft,
             observation.topRight,
@@ -194,7 +359,50 @@ final class ARCardMeasurer: NSObject, ObservableObject {
             observation.bottomLeft,
         ]
 
-        let points = corners.compactMap { worldPoint(forNormalizedImagePoint: $0, frame: frame) }
+        // 1. The card's plane, from one raycast through the centre.
+        let center = CGPoint(
+            x: corners.map(\.x).reduce(0, +) / 4,
+            y: corners.map(\.y).reduce(0, +) / 4
+        )
+        let sensorCenter = sensorPoint(fromVisionPoint: center)
+        var planeHit = session.raycast(frame.raycastQuery(
+            from: sensorCenter, allowing: .existingPlaneGeometry, alignment: .horizontal)).first
+        if planeHit == nil {
+            planeHit = session.raycast(frame.raycastQuery(
+                from: sensorCenter, allowing: .estimatedPlane, alignment: .horizontal)).first
+        }
+        guard let planeHit else { return nil }
+
+        let planePoint = simd_make_float3(planeHit.worldTransform.columns.3)
+        var planeNormal = simd_make_float3(planeHit.worldTransform.columns.1)
+        if simd_length(planeNormal) < 0.5 {
+            planeNormal = simd_float3(0, 1, 0)
+        }
+        planeNormal = simd_normalize(planeNormal)
+
+        // 2. Each corner's camera ray, intersected with that plane.
+        let camera = frame.camera
+        let cameraTransform = camera.transform
+        let rayOrigin = simd_make_float3(cameraTransform.columns.3)
+        let intrinsics = camera.intrinsics
+        let imageWidth = Float(CVPixelBufferGetWidth(frame.capturedImage))
+        let imageHeight = Float(CVPixelBufferGetHeight(frame.capturedImage))
+
+        let sensorCorners = corners.map { sensorPoint(fromVisionPoint: $0) }
+        let points = sensorCorners.compactMap { sensor -> simd_float3? in
+            let directionCamera = cameraRayDirection(
+                pixelX: Float(sensor.x) * imageWidth,
+                pixelY: Float(sensor.y) * imageHeight,
+                fx: intrinsics[0][0], fy: intrinsics[1][1],
+                ox: intrinsics[2][0], oy: intrinsics[2][1]
+            )
+            let world4 = cameraTransform * simd_float4(directionCamera, 0)
+            let direction = simd_normalize(simd_make_float3(world4))
+            return intersect(
+                rayOrigin: rayOrigin, rayDirection: direction,
+                planePoint: planePoint, planeNormal: planeNormal
+            )
+        }
         guard points.count == 4 else { return nil }
 
         // Opposite edges are averaged so a slight perspective skew doesn't bias
@@ -216,38 +424,98 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         // surface — usually a mis-detection on a patterned background.
         let widthSkew = abs(Double(top - bottom)) * 1000
         let heightSkew = abs(Double(left - right)) * 1000
-        guard widthSkew < 4, heightSkew < 4 else { return nil }
+        guard widthSkew < 6, heightSkew < 6 else { return nil }
 
-        return CardMeasurement(widthMM: widthMM, heightMM: heightMM, confidence: Double(observation.confidence))
-    }
-
-    /// Raycasts one normalised Vision point onto the nearest horizontal plane.
-    private func worldPoint(forNormalizedImagePoint point: CGPoint, frame: ARFrame) -> simd_float3? {
-        // Vision's origin is bottom-left; ARKit's viewport mapping expects top-left.
-        let flipped = CGPoint(x: point.x, y: 1 - point.y)
-
-        let query = frame.raycastQuery(
-            from: flipped,
-            allowing: .estimatedPlane,
-            alignment: .horizontal
-        )
-
-        guard let result = session.raycast(query).first else { return nil }
-        return simd_make_float3(result.worldTransform.columns.3)
-    }
-
-    private func noteMissingCard() {
-        stabilizer.reset()
-
-        guard let since = lastDetectionAt ?? startedAt else { return }
-        if Date.now.timeIntervalSince(since) > lostCardGrace {
-            if case .failed = phase { return }
-            phase = .failed(.lostCard)
-        } else if hasPlane, case .findingSurface = phase {
-            phase = .searching
-        } else if case .detecting = phase {
-            phase = .searching
+        // 3. The card's on-screen quad, so the UI can draw its frame on the
+        // card. displayTransform maps sensor-space normalized points into the
+        // viewport exactly as ARKit renders the camera image (aspect-filled).
+        var viewQuad: [CGPoint] = []
+        if viewport.width > 1, viewport.height > 1 {
+            let transform = frame.displayTransform(for: .portrait, viewportSize: viewport)
+            viewQuad = corners.map { corner in
+                let normalized = sensorPoint(fromVisionPoint: corner).applying(transform)
+                return CGPoint(x: normalized.x * viewport.width, y: normalized.y * viewport.height)
+            }
         }
+
+        let measurement = CardMeasurement(
+            widthMM: widthMM, heightMM: heightMM, confidence: Double(observation.confidence))
+        let snapshot = includeSnapshot
+            ? cropCardImage(from: frame, sensorCorners: sensorCorners)
+            : nil
+        return DetectionResult(measurement: measurement, viewQuad: viewQuad, cardImage: snapshot)
+    }
+
+    /// Crops the card (plus a small margin) out of the captured frame and
+    /// rotates it upright, for the locked screen's centred presentation.
+    nonisolated private static func cropCardImage(
+        from frame: ARFrame, sensorCorners: [CGPoint]
+    ) -> CGImage? {
+        let buffer = frame.capturedImage
+        let width = CGFloat(CVPixelBufferGetWidth(buffer))
+        let height = CGFloat(CVPixelBufferGetHeight(buffer))
+
+        let xs = sensorCorners.map { $0.x * width }
+        let ys = sensorCorners.map { $0.y * height }
+        guard let minX = xs.min(), let maxX = xs.max(),
+              let minY = ys.min(), let maxY = ys.max() else { return nil }
+
+        let marginX = (maxX - minX) * 0.08
+        let marginY = (maxY - minY) * 0.08
+        // Sensor points are top-left origin; CIImage is bottom-left — flip y.
+        let cropRect = CGRect(
+            x: minX - marginX,
+            y: height - (maxY + marginY),
+            width: (maxX - minX) + marginX * 2,
+            height: (maxY - minY) + marginY * 2
+        ).intersection(CGRect(x: 0, y: 0, width: width, height: height))
+        guard !cropRect.isEmpty else { return nil }
+
+        let cropped = CIImage(cvPixelBuffer: buffer)
+            .cropped(to: cropRect)
+            .oriented(.right)
+        return snapshotContext.createCGImage(cropped, from: cropped.extent)
+    }
+
+    // MARK: - Geometry primitives
+
+    /// The camera-space ray through a pixel of the captured image.
+    ///
+    /// ARKit's camera space is +x right, +y up, looking down −z; image pixels
+    /// run +x right, +y **down** — hence the y flip.
+    nonisolated static func cameraRayDirection(
+        pixelX: Float, pixelY: Float,
+        fx: Float, fy: Float, ox: Float, oy: Float
+    ) -> simd_float3 {
+        simd_normalize(simd_float3((pixelX - ox) / fx, -(pixelY - oy) / fy, -1))
+    }
+
+    /// Ray–plane intersection; nil when the ray is parallel to or points away
+    /// from the plane.
+    nonisolated static func intersect(
+        rayOrigin: simd_float3, rayDirection: simd_float3,
+        planePoint: simd_float3, planeNormal: simd_float3
+    ) -> simd_float3? {
+        let denominator = simd_dot(rayDirection, planeNormal)
+        guard abs(denominator) > 1e-5 else { return nil }
+        let t = simd_dot(planePoint - rayOrigin, planeNormal) / denominator
+        guard t > 0 else { return nil }
+        return rayOrigin + t * rayDirection
+    }
+
+    /// Converts a Vision point into ARKit's captured-image space.
+    ///
+    /// Vision was run against the frame oriented `.right` (portrait), and its
+    /// points are normalized with a bottom-left origin. `raycastQuery(from:)`
+    /// wants normalized points in the *sensor-native landscape* image with a
+    /// top-left origin. Portrait is the sensor image rotated 90° clockwise, so
+    /// the inverse mapping is (x, y) → (1 − y, 1 − x).
+    ///
+    /// Getting this wrong doesn't degrade the measurement — it destroys it:
+    /// every raycast lands 90° away from the card, and no sample ever survives
+    /// the sanity checks, so the scan never locks.
+    nonisolated static func sensorPoint(fromVisionPoint point: CGPoint) -> CGPoint {
+        CGPoint(x: 1 - point.y, y: 1 - point.x)
     }
 }
 
@@ -255,8 +523,27 @@ final class ARCardMeasurer: NSObject, ObservableObject {
 
 extension ARCardMeasurer: ARSessionDelegate {
     nonisolated func session(_ session: ARSession, didUpdate frame: ARFrame) {
-        Task { @MainActor in
-            self.process(frame: frame)
+        guard isMeasuring.withLock({ $0 }) else { return }
+
+        // Claim the single in-flight slot or drop the frame — dropping keeps
+        // ARKit's pipeline flowing; queueing would retain frames and stall it.
+        let claimed = frameGate.withLock { busy -> Bool in
+            if busy { return false }
+            busy = true
+            return true
+        }
+        guard claimed else { return }
+
+        let viewport = viewportStore.withLock { $0 }
+        let includeSnapshot = wantSnapshot.withLock { $0 }
+        visionQueue.async { [weak self] in
+            guard let self else { return }
+            let result = Self.measureCard(
+                in: frame, session: session, viewport: viewport, includeSnapshot: includeSnapshot)
+            self.frameGate.withLock { $0 = false }
+            Task { @MainActor [weak self] in
+                self?.ingest(result)
+            }
         }
     }
 
@@ -272,7 +559,7 @@ extension ARCardMeasurer: ARSessionDelegate {
 
     nonisolated func session(_ session: ARSession, didFailWithError error: Error) {
         Task { @MainActor in
-            self.logger.error("AR session failed: \(error.localizedDescription)")
+            measureLogger.error("AR session failed: \(error.localizedDescription)")
             self.phase = .failed(.lostCard)
         }
     }

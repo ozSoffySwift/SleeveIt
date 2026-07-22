@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import simd
 @testable import SleeveIt
 
 final class MeasurementTests: XCTestCase {
@@ -83,6 +84,117 @@ final class MeasurementTests: XCTestCase {
         let odd = CardMeasurement(widthMM: 61, heightMM: 94, confidence: 1)
         let oddMatch = try XCTUnwrap(SleeveMatcher.nearest(to: odd, in: sizes))
         XCTAssertFalse(SleeveMatcher.isConfident(odd, oddMatch))
+    }
+
+    // MARK: - Vision → ARKit coordinate conversion
+
+    /// The mapping that places raycasts on the card's actual corners. Vision
+    /// points are portrait-oriented with a bottom-left origin; ARKit's raycast
+    /// wants the sensor-native landscape image with a top-left origin. Portrait
+    /// is the sensor rotated 90° clockwise, so the inverse is (x,y) → (1−y, 1−x).
+    /// This being wrong is invisible in code review and fatal at runtime — the
+    /// scan can never lock — so the geometry is pinned here.
+    func testVisionToSensorConversionMapsKnownCorners() {
+        let convert = ARCardMeasurer.sensorPoint(fromVisionPoint:)
+
+        // Centre is rotation-invariant.
+        XCTAssertEqual(convert(CGPoint(x: 0.5, y: 0.5)), CGPoint(x: 0.5, y: 0.5))
+
+        // Portrait top-centre lives on the sensor's left-edge middle.
+        XCTAssertEqual(convert(CGPoint(x: 0.5, y: 1.0)), CGPoint(x: 0.0, y: 0.5))
+
+        // Portrait bottom-left corner is the sensor's bottom-right.
+        XCTAssertEqual(convert(CGPoint(x: 0.0, y: 0.0)), CGPoint(x: 1.0, y: 1.0))
+
+        // Portrait top-right corner is the sensor's top-left.
+        XCTAssertEqual(convert(CGPoint(x: 1.0, y: 1.0)), CGPoint(x: 0.0, y: 0.0))
+    }
+
+    func testVisionToSensorConversionIsNotAPlainYFlip() {
+        // The original bug: only flipping y. For any off-axis point the two
+        // mappings must disagree, or this test would let the bug back in.
+        let point = CGPoint(x: 0.2, y: 0.7)
+        let correct = ARCardMeasurer.sensorPoint(fromVisionPoint: point)
+        let plainFlip = CGPoint(x: point.x, y: 1 - point.y)
+        XCTAssertNotEqual(correct, plainFlip)
+    }
+
+    // MARK: - Ray geometry
+
+    func testCameraRayThroughPrincipalPointLooksStraightAhead() {
+        let direction = ARCardMeasurer.cameraRayDirection(
+            pixelX: 960, pixelY: 540, fx: 1000, fy: 1000, ox: 960, oy: 540)
+        XCTAssertEqual(direction.x, 0, accuracy: 1e-6)
+        XCTAssertEqual(direction.y, 0, accuracy: 1e-6)
+        XCTAssertEqual(direction.z, -1, accuracy: 1e-6)
+    }
+
+    func testRayPlaneIntersection() {
+        // Straight down from 1m above the origin onto the ground plane.
+        let hit = ARCardMeasurer.intersect(
+            rayOrigin: simd_float3(0, 1, 0), rayDirection: simd_float3(0, -1, 0),
+            planePoint: simd_float3(0, 0, 0), planeNormal: simd_float3(0, 1, 0))
+        XCTAssertEqual(hit, simd_float3(0, 0, 0))
+
+        // Parallel ray never intersects.
+        XCTAssertNil(ARCardMeasurer.intersect(
+            rayOrigin: simd_float3(0, 1, 0), rayDirection: simd_float3(1, 0, 0),
+            planePoint: simd_float3(0, 0, 0), planeNormal: simd_float3(0, 1, 0)))
+
+        // A plane behind the ray is rejected.
+        XCTAssertNil(ARCardMeasurer.intersect(
+            rayOrigin: simd_float3(0, 1, 0), rayDirection: simd_float3(0, 1, 0),
+            planePoint: simd_float3(0, 0, 0), planeNormal: simd_float3(0, 1, 0)))
+    }
+
+    /// End-to-end synthetic check of the unprojection path: a 63.5×88mm card on
+    /// a table, camera 30cm directly above — project each corner to pixels with
+    /// the same intrinsics model, then recover the corners via
+    /// `cameraRayDirection` + `intersect` and confirm the edge lengths come back
+    /// as the card's true size.
+    func testCornerRecoveryReproducesCardDimensions() throws {
+        let (fx, fy, ox, oy): (Float, Float, Float, Float) = (1400, 1400, 960, 540)
+
+        // Camera at (0, 0.3, 0) looking straight down: x_cam = world +x,
+        // y_cam = world -z, z_cam = world +y (camera looks along -z_cam = -y).
+        let rotation = simd_float3x3(columns: (
+            simd_float3(1, 0, 0),
+            simd_float3(0, 0, -1),
+            simd_float3(0, 1, 0)
+        ))
+        let cameraPosition = simd_float3(0, 0.3, 0)
+
+        // Card corners on the table plane (y = 0), 63.5 × 88 mm.
+        let hw: Float = 0.03175
+        let hh: Float = 0.044
+        var worldCorners: [simd_float3] = []
+        worldCorners.append(simd_float3(-hw, 0, -hh))
+        worldCorners.append(simd_float3(hw, 0, -hh))
+        worldCorners.append(simd_float3(hw, 0, hh))
+        worldCorners.append(simd_float3(-hw, 0, hh))
+
+        // Project to pixels (camera convention: -z forward, image y down).
+        let pixels = worldCorners.map { world -> (Float, Float) in
+            let cam = rotation.transpose * (world - cameraPosition)
+            let u = fx * (cam.x / -cam.z) + ox
+            let v = fy * (-cam.y / -cam.z) + oy
+            return (u, v)
+        }
+
+        // Recover via the production primitives.
+        let recovered = try pixels.map { (u, v) -> simd_float3 in
+            let dirCam = ARCardMeasurer.cameraRayDirection(
+                pixelX: u, pixelY: v, fx: fx, fy: fy, ox: ox, oy: oy)
+            let dirWorld = rotation * dirCam
+            return try XCTUnwrap(ARCardMeasurer.intersect(
+                rayOrigin: cameraPosition, rayDirection: dirWorld,
+                planePoint: .zero, planeNormal: simd_float3(0, 1, 0)))
+        }
+
+        let width = Double(simd_distance(recovered[0], recovered[1])) * 1000
+        let height = Double(simd_distance(recovered[1], recovered[2])) * 1000
+        XCTAssertEqual(width, 63.5, accuracy: 0.05)
+        XCTAssertEqual(height, 88.0, accuracy: 0.05)
     }
 
     // MARK: - Units

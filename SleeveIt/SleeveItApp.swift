@@ -22,7 +22,7 @@ struct SleeveItApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            AppRoot()
                 .task {
                     let store = CatalogStore(context: container.mainContext)
                     store.seedIfNeeded()

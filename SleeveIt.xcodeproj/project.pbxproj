@@ -405,6 +405,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Support/AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SleeveIt;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "SleeveIt uses the camera to measure your cards and recommend the right sleeve size.";
@@ -439,6 +440,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Support/AppInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SleeveIt;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "SleeveIt uses the camera to measure your cards and recommend the right sleeve size.";

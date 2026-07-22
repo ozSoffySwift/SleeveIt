@@ -92,7 +92,15 @@ struct SettingsScreen: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             } footer: {
-                Text("Free plan: \(quota.remaining) of \(quota.limit) camera measurements left today. Typing dimensions by hand is always unlimited.")
+                // Interpolating `remaining` while unlimited printed Int.max —
+                // a nineteen-digit number — so each state gets its own copy.
+                if !quota.isEnforced {
+                    Text("Camera measurements are unlimited during the launch period. The free plan's daily cap of \(quota.limit) starts later; typing dimensions by hand is always unlimited.")
+                } else if quota.isUnlimited {
+                    Text("Camera measurements are unlimited on your plan.")
+                } else {
+                    Text("Free plan: \(quota.remaining) of \(quota.limit) camera measurements left today. Typing dimensions by hand is always unlimited.")
+                }
             }
 
             Section("Appearance") {

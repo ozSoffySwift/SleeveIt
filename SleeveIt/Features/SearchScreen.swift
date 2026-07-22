@@ -16,7 +16,12 @@ struct SearchScreen: View {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
         return games
-            .filter { $0.title.localizedCaseInsensitiveContains(trimmed) }
+            .filter { game in
+                // Aliases count too, so "Avalon", "MTG" or "Settlers of Catan"
+                // find their games despite different canonical titles.
+                game.title.localizedCaseInsensitiveContains(trimmed)
+                    || game.aliases.contains { $0.localizedCaseInsensitiveContains(trimmed) }
+            }
             .sorted { lhs, rhs in
                 // Prefix matches first, so "cat" surfaces Catan above Marvel Champions.
                 let l = lhs.title.range(of: trimmed, options: [.caseInsensitive, .anchored]) != nil
@@ -47,7 +52,7 @@ struct SearchScreen: View {
                     .listStyle(.insetGrouped)
                 }
             }
-            .navigationTitle("Search")
+            .navigationTitle("Measure")
             // Inline so the title sits on the same row as the settings gear,
             // instead of as a large title on the row below.
             .navigationBarTitleDisplayMode(.inline)
@@ -116,43 +121,68 @@ struct SearchScreen: View {
     }
 
     private var measureCTA: some View {
-        Button { isMeasurePresented = true } label: {
-            VStack(alignment: .leading, spacing: 0) {
+        // Shaped like a real Card Game (Standard) card: 63.5 × 88 aspect ratio,
+        // portrait, centred — so the primary action itself looks like a card.
+        let cardWidth: CGFloat = 208
+        let cardHeight = cardWidth * 88 / 63.5
+
+        return Button { isMeasurePresented = true } label: {
+            VStack(spacing: 0) {
+                // Playing-card corner index, top-left.
+                cornerIndex
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 8)
+
                 Image(systemName: "viewfinder")
-                    .font(.system(size: 24))
-                    .frame(width: 46, height: 46)
-                    .background(.white.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .font(.system(size: 44, weight: .regular))
+                    .frame(width: 68, height: 68)
+                    .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-                Text("Measure a Card")
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.top, 16)
+                Text("Measure\na Card")
+                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 14)
 
-                Text("Point your camera at any card to get its exact sleeve size.")
-                    .font(.system(size: 15))
+                Text("Size any card with your camera")
+                    .font(.system(size: 13))
                     .opacity(0.9)
-                    .multilineTextAlignment(.leading)
-                    .padding(.top, 3)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
+
+                Spacer(minLength: 8)
+
+                // Mirrored index, bottom-right, like a playing card.
+                cornerIndex
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .rotationEffect(.degrees(180))
             }
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(22)
+            .padding(18)
+            .frame(width: cardWidth, height: cardHeight)
             .background {
-                RoundedRectangle(cornerRadius: Theme.Radius.hero, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(LinearGradient(
                         colors: [Color(red: 34 / 255, green: 122 / 255, blue: 61 / 255), Theme.accentDeep],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
-                    .overlay(alignment: .topTrailing) {
-                        PlayingCardDecoration()
-                            .offset(x: 26, y: -14)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.hero, style: .continuous))
             }
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .shadow(color: Theme.accent.opacity(0.4), radius: 18, y: 12)
         }
         .buttonStyle(.plain)
-        .padding(.top, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 16)
+    }
+
+    /// The small rank + suit index printed in a playing card's corner.
+    private var cornerIndex: some View {
+        VStack(spacing: 0) {
+            Text("A").font(.system(size: 15, weight: .bold))
+            Image(systemName: "suit.spade.fill").font(.system(size: 11))
+        }
+        .foregroundStyle(.white.opacity(0.9))
     }
 
     private var noResults: some View {
@@ -204,53 +234,5 @@ struct GameRow: View {
             Spacer(minLength: 0)
         }
         .foregroundStyle(.primary)
-    }
-}
-
-// MARK: - Playing-card decoration
-
-/// A pair of fanned playing cards used to decorate the Measure CTA — portrait,
-/// with a corner index and centre pip, so the banner reads as a playing card
-/// rather than a bank/credit card.
-private struct PlayingCardDecoration: View {
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            // Back card, peeking and rotated the other way.
-            card(suit: "suit.heart.fill", rank: "K")
-                .rotationEffect(.degrees(-14), anchor: .bottomTrailing)
-                .offset(x: -46, y: 20)
-                .opacity(0.55)
-
-            // Front card.
-            card(suit: "suit.spade.fill", rank: "A")
-                .rotationEffect(.degrees(10), anchor: .bottomTrailing)
-        }
-        .frame(width: 150, height: 150, alignment: .topTrailing)
-    }
-
-    private func card(suit: String, rank: String) -> some View {
-        let width: CGFloat = 96
-        let height: CGFloat = 134
-        return RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(.white.opacity(0.14))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(.white.opacity(0.55), lineWidth: 2)
-            }
-            .overlay(alignment: .topLeading) {
-                VStack(spacing: 1) {
-                    Text(rank).font(.system(size: 13, weight: .bold))
-                    Image(systemName: suit).font(.system(size: 9))
-                }
-                .foregroundStyle(.white.opacity(0.85))
-                .padding(.top, 8)
-                .padding(.leading, 9)
-            }
-            .overlay {
-                Image(systemName: suit)
-                    .font(.system(size: 34))
-                    .foregroundStyle(.white.opacity(0.85))
-            }
-            .frame(width: width, height: height)
     }
 }

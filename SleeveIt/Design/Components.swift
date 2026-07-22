@@ -72,6 +72,8 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 18, weight: .semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
             .foregroundStyle(isEnabled ? Color.white : Color.secondary)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background {
@@ -88,6 +90,8 @@ struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, minHeight: 50)
             .background {

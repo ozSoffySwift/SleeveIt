@@ -12,9 +12,10 @@ import os
 /// created.
 @MainActor
 final class CatalogStore {
-    /// Where the refreshed catalog is fetched from. Point this at your own
-    /// static host (S3/R2/GitHub Pages) — see README for the payload contract.
-    static let remoteURL = URL(string: "https://catalog.sleeveit.app/v1/catalog.json")!
+    /// Where the refreshed catalog is fetched from: GitHub Pages, served from
+    /// `docs/catalog/` in the app's own repo. Publishing a new catalog is
+    /// `Scripts/publish-catalog.sh` + push — no App Store release needed.
+    static let remoteURL = URL(string: "https://ozsoffyswift.github.io/SleeveIt/catalog/catalog.json")!
 
     private let logger = Logger(subsystem: "com.sleeveit.SleeveIt", category: "catalog")
     private let context: ModelContext

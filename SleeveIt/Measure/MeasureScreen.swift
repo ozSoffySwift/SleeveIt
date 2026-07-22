@@ -44,8 +44,15 @@ struct MeasureScreen: View {
 
     var body: some View {
         ZStack {
-            cameraLayer
-                .ignoresSafeArea()
+            // GeometryReader here (ignoring safe areas) reports the exact
+            // full-screen size the camera renders into — the measurer needs it
+            // to map detected corners into view coordinates.
+            GeometryReader { proxy in
+                cameraLayer
+                    .onAppear { measurer.setViewport(proxy.size) }
+                    .onChange(of: proxy.size) { _, size in measurer.setViewport(size) }
+            }
+            .ignoresSafeArea()
 
             scanOverlay
                 .ignoresSafeArea()
@@ -132,8 +139,17 @@ struct MeasureScreen: View {
 
     @ViewBuilder
     private var scanOverlay: some View {
+        // When the detector knows where the card is on screen, the frames are
+        // drawn on the card itself; the fixed centred frames are the fallback
+        // (manual entry, simulator, and the instant before the first detection).
         if settled != nil {
-            LockedFrame()
+            if let image = measurer.lockedCardImage {
+                LockedCardSnapshot(image: image)
+            } else if let quad = measurer.cardQuad, quad.count == 4 {
+                LockedQuadOverlay(quad: quad)
+            } else {
+                LockedFrame()
+            }
         } else if !quota.canMeasure {
             GuideFrame(isWarning: false)
                 .opacity(0.35)
@@ -144,9 +160,19 @@ struct MeasureScreen: View {
             case .searching:
                 ScanningFrame()
             case .detecting(let measurement):
-                DetectingFrame(measurement: measurement, units: units)
+                if let quad = measurer.cardQuad, quad.count == 4 {
+                    LiveQuadOverlay(quad: quad, measurement: measurement, units: units)
+                } else {
+                    DetectingFrame(measurement: measurement, units: units)
+                }
             case .locked:
-                LockedFrame()
+                if let image = measurer.lockedCardImage {
+                    LockedCardSnapshot(image: image)
+                } else if let quad = measurer.cardQuad, quad.count == 4 {
+                    LockedQuadOverlay(quad: quad)
+                } else {
+                    LockedFrame()
+                }
             }
         }
     }
@@ -193,9 +219,9 @@ struct MeasureScreen: View {
                     message: "Point your camera straight down so the whole card sits inside the frame."
                 )
             case .searching:
-                PillHint(text: "Looking for a card…", style: .searching)
+                PillHint(text: "Looking for a card", style: .searching)
             case .detecting:
-                PillHint(text: "Hold steady — locking on…", style: .detecting)
+                PillHint(text: "Hold steady, locking on", style: .detecting)
             case .failed(let reason):
                 ErrorCard(
                     reason: reason,
@@ -239,6 +265,191 @@ struct MeasureScreen: View {
             try? context.save()
         }
         dismiss()
+    }
+}
+
+// MARK: - Card-tracking overlays
+
+/// The detected card's outline as a path in view coordinates.
+private struct CardQuadShape: Shape {
+    let points: [CGPoint]
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard points.count == 4 else { return path }
+        path.move(to: points[0])
+        for point in points.dropFirst() { path.addLine(to: point) }
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Live detection frame drawn on the card itself, with the mm readouts riding
+/// its edges.
+private struct LiveQuadOverlay: View {
+    let quad: [CGPoint]
+    let measurement: CardMeasurement
+    let units: UnitPreference
+    @State private var pulse = false
+
+    private var topMid: CGPoint {
+        CGPoint(x: (quad[0].x + quad[1].x) / 2, y: (quad[0].y + quad[1].y) / 2)
+    }
+    private var rightMid: CGPoint {
+        CGPoint(x: (quad[1].x + quad[2].x) / 2, y: (quad[1].y + quad[2].y) / 2)
+    }
+
+    var body: some View {
+        ZStack {
+            // Animated green stripes marking where the card is believed to be —
+            // kept ~80% transparent so the card stays visible underneath.
+            ScanningStripes()
+                .clipShape(CardQuadShape(points: quad))
+                .allowsHitTesting(false)
+            CardQuadShape(points: quad)
+                .stroke(Color.brandGreenBright, lineWidth: 3)
+                .shadow(color: Theme.accent.opacity(0.45), radius: 14)
+                .opacity(pulse ? 1 : 0.6)
+                .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: pulse)
+
+            ForEach(quad.indices, id: \.self) { index in
+                Circle()
+                    .fill(.white)
+                    .frame(width: 10, height: 10)
+                    .shadow(color: .brandGreenBright, radius: 4)
+                    .position(quad[index])
+            }
+
+            readout(measurement.widthMM)
+                .position(x: topMid.x, y: topMid.y - 26)
+            readout(measurement.heightMM)
+                .position(x: rightMid.x + 52, y: rightMid.y)
+        }
+        .animation(.linear(duration: 0.12), value: quad)
+        .onAppear { pulse = true }
+    }
+
+    private func readout(_ value: Double) -> some View {
+        Text(units == .inches
+             ? String(format: "%.2f in", value / 25.4)
+             : String(format: "%.1f mm", value))
+            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+            .foregroundStyle(.white)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .background(Theme.accentFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .fixedSize()
+    }
+}
+
+/// Drifting diagonal green stripes, ~80% transparent, clipped to the detected
+/// card by the caller. The movement says "working on it" without hiding the
+/// card underneath.
+private struct ScanningStripes: View {
+    private let spacing: CGFloat = 26
+    private let driftSpeed: Double = 30   // points per second
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                // Faint green wash under the stripes.
+                context.fill(
+                    Path(CGRect(origin: .zero, size: size)),
+                    with: .color(Theme.good.opacity(0.08))
+                )
+
+                // Diagonal stripes, drifting one full period per cycle so the
+                // loop is seamless.
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                let offset = CGFloat((t * driftSpeed).truncatingRemainder(dividingBy: spacing))
+                var stripes = Path()
+                var x = -size.height - spacing + offset
+                while x < size.width + spacing {
+                    stripes.move(to: CGPoint(x: x, y: size.height))
+                    stripes.addLine(to: CGPoint(x: x + size.height, y: 0))
+                    x += spacing
+                }
+                context.stroke(stripes, with: .color(Theme.good.opacity(0.22)), lineWidth: 10)
+            }
+        }
+    }
+}
+
+/// The measured card itself, cropped from the sharp confirming frame and shown
+/// centred with a border — a clean "this is what I measured" presentation
+/// instead of a frozen mid-movement camera frame.
+private struct LockedCardSnapshot: View {
+    let image: UIImage
+    @State private var appear = false
+
+    var body: some View {
+        VStack {
+            Spacer().frame(height: 110)
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 240, maxHeight: 300)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(.white, lineWidth: 4)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.good, lineWidth: 2)
+                        .padding(-5)
+                }
+                .shadow(color: .black.opacity(0.45), radius: 24, y: 12)
+                .overlay(alignment: .bottom) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color(red: 0.04, green: 0.16, blue: 0.13))
+                        .frame(width: 46, height: 46)
+                        .background(Theme.good, in: Circle())
+                        .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                        .offset(y: 23)
+                }
+                .scaleEffect(appear ? 1 : 0.92)
+                .opacity(appear ? 1 : 0)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .onAppear {
+            withAnimation(.spring(duration: 0.4)) { appear = true }
+        }
+    }
+}
+
+/// The lock confirmation drawn on the card's actual position — the camera is
+/// paused on the frame that produced the lock, so the card sits sharp and
+/// clearly framed underneath.
+private struct LockedQuadOverlay: View {
+    let quad: [CGPoint]
+
+    private var centroid: CGPoint {
+        CGPoint(
+            x: quad.map(\.x).reduce(0, +) / 4,
+            y: quad.map(\.y).reduce(0, +) / 4
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            CardQuadShape(points: quad)
+                .fill(Theme.good.opacity(0.14))
+            CardQuadShape(points: quad)
+                .stroke(Theme.good, lineWidth: 3)
+                .shadow(color: Theme.good.opacity(0.4), radius: 18)
+
+            Image(systemName: "checkmark")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(Color(red: 0.04, green: 0.16, blue: 0.13))
+                .frame(width: 54, height: 54)
+                .background(Theme.good, in: Circle())
+                .position(centroid)
+        }
     }
 }
 
@@ -478,22 +689,7 @@ private struct PillHint: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            if style == .searching {
-                HStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { index in
-                        Circle()
-                            .fill(Color.brandGreenBright)
-                            .frame(width: 7, height: 7)
-                            .opacity(animating ? 1 : 0.2)
-                            .animation(
-                                .easeInOut(duration: 0.6)
-                                .repeatForever(autoreverses: true)
-                                .delay(Double(index) * 0.2),
-                                value: animating
-                            )
-                    }
-                }
-            } else {
+            if style == .detecting {
                 Image(systemName: "scope")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.brandGreenBright)
@@ -502,6 +698,23 @@ private struct PillHint: View {
             Text(text)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.white)
+                .lineLimit(1)
+                .fixedSize()
+
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { index in
+                    Circle()
+                        .fill(Color.brandGreenBright)
+                        .frame(width: 6, height: 6)
+                        .opacity(animating ? 1 : 0.2)
+                        .animation(
+                            .easeInOut(duration: 0.6)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.2),
+                            value: animating
+                        )
+                }
+            }
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 20)

@@ -3,7 +3,7 @@ import SwiftData
 
 struct RootView: View {
     enum Tab: Hashable {
-        case search, measure, list, reference
+        case search, list, reference
     }
 
     @Environment(\.modelContext) private var context
@@ -14,17 +14,10 @@ struct RootView: View {
     @ObservedObject private var measureLaunch = MeasureLaunchCoordinator.shared
 
     var body: some View {
-        TabView(selection: tabSelection) {
+        TabView(selection: $selectedTab) {
             SearchScreen(isMeasurePresented: $isMeasurePresented)
-                .tabItem { Label("Search", systemImage: "magnifyingglass") }
-                .tag(Tab.search)
-
-            // Presented as a full-screen cover rather than a tab body: the camera
-            // owns the whole screen, and a tab bar over a live AR view reads as a
-            // mistake. The tab item is kept so the design's four-tab bar survives.
-            Color.clear
                 .tabItem { Label("Measure", systemImage: "viewfinder") }
-                .tag(Tab.measure)
+                .tag(Tab.search)
 
             MyListScreen(isMeasurePresented: $isMeasurePresented, selectedTab: $selectedTab)
                 .tabItem { Label("My List", systemImage: "checklist") }
@@ -36,30 +29,16 @@ struct RootView: View {
         }
         .tint(Theme.accent)
         .preferredColorScheme(appearance.colorScheme)
+        // The camera is a full-screen cover launched from the Measure CTA, the
+        // My List buttons, and the "Measure a Card" Shortcut — not its own tab.
         .fullScreenCover(isPresented: $isMeasurePresented) {
             MeasureScreen()
         }
-        // The "Measure a Card" Shortcut opens the app and flips this flag.
         .onChange(of: measureLaunch.shouldOpenMeasure) { _, shouldOpen in
             if shouldOpen {
                 isMeasurePresented = true
                 measureLaunch.shouldOpenMeasure = false
             }
         }
-    }
-
-    /// Intercepts the Measure tab so it opens the camera instead of switching to
-    /// an empty tab body, leaving the previous tab selected underneath.
-    private var tabSelection: Binding<Tab> {
-        Binding(
-            get: { selectedTab },
-            set: { newValue in
-                if newValue == .measure {
-                    isMeasurePresented = true
-                } else {
-                    selectedTab = newValue
-                }
-            }
-        )
     }
 }
