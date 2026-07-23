@@ -129,7 +129,11 @@ final class CardDeck {
 
 // MARK: - User data
 
-/// An entry on My Sleeves — either a catalog game or a card the user measured.
+/// An entry on My Sleeves — a catalog game, a card the user measured, or a
+/// custom game the user named for a scan the catalog doesn't cover.
+///
+/// Custom games live *here*, never as `Game` rows: a catalog refresh replaces
+/// all `Game` models wholesale, and user data must survive that.
 @Model
 final class ListEntry {
     @Attribute(.unique) var id: UUID
@@ -144,6 +148,11 @@ final class ListEntry {
     /// base-game-only entries and for measured cards.
     var includedExpansionIDs: [String] = []
 
+    /// A user-typed game name for a scan the catalog doesn't cover.
+    var customTitle: String?
+    /// How many cards of the measured size that custom game holds.
+    var cardCount: Int?
+
     init(
         id: UUID = UUID(),
         gameID: String? = nil,
@@ -152,7 +161,9 @@ final class ListEntry {
         sizeID: String,
         isOwned: Bool = false,
         addedAt: Date = .now,
-        includedExpansionIDs: [String] = []
+        includedExpansionIDs: [String] = [],
+        customTitle: String? = nil,
+        cardCount: Int? = nil
     ) {
         self.id = id
         self.gameID = gameID
@@ -162,9 +173,25 @@ final class ListEntry {
         self.isOwned = isOwned
         self.addedAt = addedAt
         self.includedExpansionIDs = includedExpansionIDs
+        self.customTitle = customTitle
+        self.cardCount = cardCount
     }
 
-    var isMeasurement: Bool { gameID == nil }
+    var isMeasurement: Bool { gameID == nil && customTitle == nil }
+    var isCustomGame: Bool { gameID == nil && customTitle != nil }
+}
+
+/// How many sleeves of one size the user already owns, so the shopping list
+/// can show what's genuinely left to buy.
+@Model
+final class SleeveStock {
+    @Attribute(.unique) var sizeID: String
+    var ownedCount: Int
+
+    init(sizeID: String, ownedCount: Int) {
+        self.sizeID = sizeID
+        self.ownedCount = ownedCount
+    }
 }
 
 /// A card face the user has taught SleeveIt to recognise, stored as a Vision
@@ -218,6 +245,12 @@ enum SleeveMath {
             }
         }
         return totals
+    }
+
+    /// Sleeves left to buy for one size, given what the user already owns.
+    /// Never negative — surplus stock doesn't create phantom credit elsewhere.
+    static func netToBuy(needed: Int, owned: Int) -> Int {
+        max(0, needed - max(0, owned))
     }
 }
 

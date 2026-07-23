@@ -198,9 +198,11 @@ struct MeasureScreen: View {
                 games: games,
                 knownGameIDs: knownGameIDs,
                 units: units,
-                isPro: entitlements.isPro,
                 onAddSleeve: { add(settled, $0) },
                 onAddGame: addGame,
+                onAddCustomGame: { title, count, size in
+                    addCustomGame(settled, title: title, count: count, size: size)
+                },
                 onMeasureAnother: reset
             )
             .transition(.move(edge: .bottom))
@@ -273,6 +275,22 @@ struct MeasureScreen: View {
             context.insert(ListEntry(gameID: game.id, sizeID: sizeID))
             try? context.save()
         }
+        dismiss()
+    }
+
+    /// Saves the scan under a game name the catalog doesn't have. Lives on the
+    /// entry itself (not as a `Game` row) so a catalog refresh can't delete it.
+    private func addCustomGame(
+        _ measurement: CardMeasurement, title: String, count: Int, size: SleeveSize
+    ) {
+        context.insert(ListEntry(
+            measuredWidthMM: measurement.widthMM,
+            measuredHeightMM: measurement.heightMM,
+            sizeID: size.id,
+            customTitle: title,
+            cardCount: max(1, count)
+        ))
+        try? context.save()
         dismiss()
     }
 }
@@ -822,9 +840,9 @@ private struct ResultSheet: View {
     let games: [Game]
     let knownGameIDs: Set<String>
     let units: UnitPreference
-    let isPro: Bool
     let onAddSleeve: (SleeveSize) -> Void
     let onAddGame: (Game) -> Void
+    let onAddCustomGame: (String, Int, SleeveSize) -> Void
     let onMeasureAnother: () -> Void
 
     @State private var isPickingGame = false
@@ -867,11 +885,7 @@ private struct ResultSheet: View {
                 recommendation(match)
                     .padding(.top, 18)
 
-                if isPro, !candidates.isEmpty {
-                    proIdentifyButton
-                } else if !isPro, !candidates.isEmpty {
-                    freeTeaser
-                }
+                addToGameButton
 
                 Button("Add sleeve to My Sleeves", systemImage: "plus") { onAddSleeve(match) }
                     .buttonStyle(PrimaryButtonStyle())
@@ -889,19 +903,27 @@ private struct ResultSheet: View {
         .background(.regularMaterial)
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous))
         .sheet(isPresented: $isPickingGame) {
-            GamePickerSheet(
-                candidates: candidates,
-                units: units,
-                sizes: sizes,
-                onPick: { game in
-                    isPickingGame = false
-                    onAddGame(game)
-                }
-            )
+            if let match {
+                GamePickerSheet(
+                    candidates: candidates,
+                    allGames: games,
+                    matchedSize: match,
+                    units: units,
+                    sizes: sizes,
+                    onPick: { game in
+                        isPickingGame = false
+                        onAddGame(game)
+                    },
+                    onPickCustom: { title, count in
+                        isPickingGame = false
+                        onAddCustomGame(title, count, match)
+                    }
+                )
+            }
         }
     }
 
-    // MARK: - Pro
+    // MARK: - Add to a game
 
     /// Prefers the user's own games in the copy — "3 of your games" is a far
     /// more useful statement than "28 games in the catalog".
@@ -910,18 +932,23 @@ private struct ResultSheet: View {
         if mine > 0 {
             return "\(mine) of your games use this size"
         }
+        if candidates.isEmpty {
+            return "Search the catalog or add your own"
+        }
         return "\(candidates.count) game\(candidates.count == 1 ? "" : "s") use this size"
     }
 
-    private var proIdentifyButton: some View {
+    /// Attaching the scan to a game is what turns a loose measurement into a
+    /// managed collection — so it's front and centre for everyone.
+    private var addToGameButton: some View {
         Button {
             isPickingGame = true
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "sparkle.magnifyingglass")
+                Image(systemName: "plus.rectangle.on.folder")
                     .font(.system(size: 18))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Identify the game")
+                    Text("Add to a game")
                         .font(.system(size: 16, weight: .semibold))
                     Text(candidateSummary)
                         .font(.system(size: 13))
@@ -943,27 +970,6 @@ private struct ResultSheet: View {
             }
         }
         .buttonStyle(.plain)
-        .padding(.top, 12)
-    }
-
-    /// Free tier sees exactly what Pro would unlock, stated plainly — no fake
-    /// blur, no pretending the app already knows the answer.
-    private var freeTeaser: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 15))
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(candidateSummary)
-                    .font(.system(size: 15, weight: .semibold))
-                Text("Pro narrows this to your games and adds every deck at once.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(14)
-        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .padding(.top, 12)
     }
 
@@ -1016,16 +1022,51 @@ private struct ResultSheet: View {
 /// deck in that game to the basket in one action.
 private struct GamePickerSheet: View {
     let candidates: [GameCandidate]
+    let allGames: [Game]
+    let matchedSize: SleeveSize
     let units: UnitPreference
     let sizes: [SleeveSize]
     let onPick: (Game) -> Void
+    let onPickCustom: (String, Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var expanded: String?
     @State private var teachTarget: Game?
+    @State private var query = ""
+    @State private var isNamingCustom = false
+    @State private var customCountText = ""
 
     private var mine: [GameCandidate] { candidates.filter(\.isKnownToUser) }
     private var others: [GameCandidate] { candidates.filter { !$0.isKnownToUser } }
+
+    private var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Search across the whole catalog — attaching a scan must never be
+    /// limited to size-matched suggestions, since the user knows the game's
+    /// name better than the measurement knows its size.
+    ///
+    /// Token matching, not substring: every word must appear somewhere, so
+    /// "dixit odys" finds "Dixit: Odyssey" despite the punctuation between.
+    private var searchResults: [Game] {
+        let tokens = trimmedQuery.split(separator: " ").map(String.init)
+        guard !tokens.isEmpty else { return [] }
+        return allGames
+            .filter { game in
+                tokens.allSatisfy { token in
+                    game.title.localizedCaseInsensitiveContains(token)
+                        || game.aliases.contains { $0.localizedCaseInsensitiveContains(token) }
+                }
+            }
+            .sorted { lhs, rhs in
+                let l = lhs.title.range(of: tokens[0], options: [.caseInsensitive, .anchored]) != nil
+                let r = rhs.title.range(of: tokens[0], options: [.caseInsensitive, .anchored]) != nil
+                return l == r ? lhs.title < rhs.title : l
+            }
+            .prefix(80)
+            .map { $0 }
+    }
 
     private func size(_ id: String) -> SleeveSize? {
         sizes.first { $0.id == id }
@@ -1034,24 +1075,13 @@ private struct GamePickerSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                if !mine.isEmpty {
-                    Section {
-                        ForEach(mine) { row($0) }
-                    } header: {
-                        Text("From your list")
-                    } footer: {
-                        Text("Games you already own or track, which use this card size.")
-                    }
-                }
-
-                Section {
-                    ForEach(others) { row($0) }
-                } header: {
-                    Text(mine.isEmpty ? "Games using this card size" : "Other games this size")
-                } footer: {
-                    Text("Card size alone can't tell these apart, so pick the game you're sleeving. SleeveIt then adds every deck it contains — including decks in other sizes.")
+                if trimmedQuery.isEmpty {
+                    suggestionSections
+                } else {
+                    searchSections
                 }
             }
+            .searchable(text: $query, prompt: "Search all games")
             .navigationTitle("Which game?")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1062,6 +1092,74 @@ private struct GamePickerSheet: View {
             .sheet(item: $teachTarget) { game in
                 TeachCardView(gameID: game.id, gameTitle: game.title)
             }
+            .alert("How many cards?", isPresented: $isNamingCustom) {
+                TextField("Number of cards this size", text: $customCountText)
+                    .keyboardType(.numberPad)
+                Button("Add") {
+                    onPickCustom(trimmedQuery, Int(customCountText) ?? 1)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Roughly how many \(matchedSize.shortName) cards does “\(trimmedQuery)” have? You can adjust later.")
+            }
+        }
+    }
+
+    @ViewBuilder private var suggestionSections: some View {
+        if !mine.isEmpty {
+            Section {
+                ForEach(mine) { row($0) }
+            } header: {
+                Text("From your list")
+            } footer: {
+                Text("Games you already own or track, which use this card size.")
+            }
+        }
+
+        if !others.isEmpty || !mine.isEmpty {
+            Section {
+                ForEach(others) { row($0) }
+            } header: {
+                Text(mine.isEmpty ? "Games using this card size" : "Other games this size")
+            } footer: {
+                Text("Card size alone can't tell these apart, so pick the game you're sleeving. SleeveIt then adds every deck it contains — including decks in other sizes. Not here? Search above, or add your own.")
+            }
+        } else {
+            Section {
+                Text("No catalog game uses this exact size. Search for the game above — or type its name and add it as your own.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder private var searchSections: some View {
+        if !searchResults.isEmpty {
+            Section("Catalog") {
+                ForEach(searchResults, id: \.id) { game in
+                    row(GameCandidate(
+                        game: game,
+                        matchingCardCount: game.countsBySizeID[matchedSize.id] ?? 0,
+                        totalSleeves: game.totalCards,
+                        isKnownToUser: false
+                    ))
+                }
+            }
+        }
+
+        // The custom path stays visible under real matches too — search can
+        // surface near-misses while the user's game still isn't in the catalog.
+        Section {
+            Button {
+                customCountText = ""
+                isNamingCustom = true
+            } label: {
+                Label("Add “\(trimmedQuery)” as your own game", systemImage: "plus.circle.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+        } footer: {
+            Text("Saves this scan under your game's name — it stays in My Sleeves even though it's not in the catalog.")
         }
     }
 

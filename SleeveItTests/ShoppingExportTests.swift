@@ -29,3 +29,44 @@ final class ShoppingExportTests: XCTestCase {
         XCTAssertEqual(String(decoding: data.prefix(5), as: UTF8.self), "%PDF-")
     }
 }
+
+// MARK: - Sleeve stock
+
+final class SleeveStockTests: XCTestCase {
+
+    func testNetToBuySubtractsStock() {
+        XCTAssertEqual(SleeveMath.netToBuy(needed: 727, owned: 200), 527)
+    }
+
+    func testNetToBuyNeverGoesNegative() {
+        // Surplus stock must not create phantom credit.
+        XCTAssertEqual(SleeveMath.netToBuy(needed: 100, owned: 250), 0)
+    }
+
+    func testNetToBuyIgnoresNegativeStock() {
+        // A corrupted negative stock value cannot inflate the requirement.
+        XCTAssertEqual(SleeveMath.netToBuy(needed: 100, owned: -50), 100)
+    }
+
+    func testNetToBuyWithNoStockIsTheFullRequirement() {
+        XCTAssertEqual(SleeveMath.netToBuy(needed: 84, owned: 0), 84)
+    }
+
+    // MARK: Custom game entries
+
+    func testCustomGameEntryIsNeitherMeasurementNorCatalog() {
+        let entry = ListEntry(
+            measuredWidthMM: 63.4, measuredHeightMM: 88.1,
+            sizeID: "standard", customTitle: "My Prototype", cardCount: 120)
+        XCTAssertTrue(entry.isCustomGame)
+        XCTAssertFalse(entry.isMeasurement)
+        XCTAssertNil(entry.gameID)
+    }
+
+    func testPlainMeasurementIsStillAMeasurement() {
+        let entry = ListEntry(
+            measuredWidthMM: 63.4, measuredHeightMM: 88.1, sizeID: "standard")
+        XCTAssertTrue(entry.isMeasurement)
+        XCTAssertFalse(entry.isCustomGame)
+    }
+}

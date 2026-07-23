@@ -9,6 +9,10 @@ struct MyListScreen: View {
     @Query(sort: \ListEntry.addedAt) private var entries: [ListEntry]
     @Query(sort: \Game.title) private var games: [Game]
     @Query(sort: \SleeveSize.sortIndex) private var sizes: [SleeveSize]
+    @Query private var stocks: [SleeveStock]
+
+    /// The size whose stock is being edited, driving the editor sheet.
+    @State private var stockTarget: SleeveSize?
 
     @Binding var isMeasurePresented: Bool
     @Binding var selectedTab: RootView.Tab
@@ -24,7 +28,8 @@ struct MyListScreen: View {
     /// Cards-per-size for one entry, base game plus every expansion it folds in.
     private func combinedCounts(for entry: ListEntry) -> [String: Int] {
         guard let gameID = entry.gameID, let game = gamesByID[gameID] else {
-            return [entry.sizeID: 1] // a measured card
+            // A custom game carries its own card count; a bare measured card is 1.
+            return [entry.sizeID: entry.cardCount ?? 1]
         }
         return SleeveMath.combinedCounts(
             base: game,
@@ -32,7 +37,16 @@ struct MyListScreen: View {
         )
     }
 
-    private var shoppingList: [(size: SleeveSize, count: Int)] {
+    /// One shopping line: what the games need, what the drawer already holds,
+    /// and the difference that actually goes on the shopping trip.
+    struct ShoppingLine {
+        var size: SleeveSize
+        var needed: Int
+        var owned: Int
+        var buy: Int { SleeveMath.netToBuy(needed: needed, owned: owned) }
+    }
+
+    private var shoppingList: [ShoppingLine] {
         var totals: [String: Int] = [:]
 
         for entry in entries where !entry.isOwned {
@@ -41,11 +55,15 @@ struct MyListScreen: View {
             }
         }
 
+        let ownedBySize = Dictionary(
+            uniqueKeysWithValues: stocks.map { ($0.sizeID, $0.ownedCount) })
         return totals
-            .compactMap { id, count in
-                sizes.first { $0.id == id }.map { (size: $0, count: count) }
+            .compactMap { id, needed in
+                sizes.first { $0.id == id }.map {
+                    ShoppingLine(size: $0, needed: needed, owned: ownedBySize[id] ?? 0)
+                }
             }
-            .sorted { $0.count > $1.count }
+            .sorted { ($0.buy, $0.needed) > ($1.buy, $1.needed) }
     }
 
     var body: some View {
@@ -72,29 +90,37 @@ struct MyListScreen: View {
     }
 
     /// Changes whenever anything that affects the snapshot changes: which games
-    /// are listed, their sleeved state, and their folded-in expansions.
+    /// are listed, their sleeved state, folded-in expansions, and sleeve stock.
     private var snapshotFingerprint: String {
-        entries
-            .map { "\($0.gameID ?? $0.sizeID):\($0.isOwned):\($0.includedExpansionIDs.sorted().joined(separator: ","))" }
+        let entryPart = entries
+            .map { "\($0.gameID ?? $0.customTitle ?? $0.sizeID):\($0.isOwned):\($0.includedExpansionIDs.sorted().joined(separator: ","))" }
             .joined(separator: "|")
+        let stockPart = stocks
+            .map { "\($0.sizeID)=\($0.ownedCount)" }
+            .sorted()
+            .joined(separator: "|")
+        return entryPart + "#" + stockPart
     }
 
     private func publishSnapshot() {
-        let list = shoppingList
+        // The widget answers "what do I still need to buy?" — so stock-covered
+        // sizes don't count.
+        let list = shoppingList.filter { $0.buy > 0 }
         SharedStore.save(SharedSnapshot(
-            totalSleeves: list.reduce(0) { $0 + $1.count },
-            topLines: list.prefix(3).map { "\($0.count)× \($0.size.shortName)" },
+            totalSleeves: list.reduce(0) { $0 + $1.buy },
+            topLines: list.prefix(3).map { "\($0.buy)× \($0.size.shortName)" },
             gamesToSleeve: entries.filter { !$0.isOwned }.count,
             updatedAt: .now
         ))
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Export lines derived from the consolidated shopping list.
+    /// Export lines derived from the consolidated shopping list — net of
+    /// stock, because the export is the thing taken to the shop.
     private var exportLines: [ShoppingListExport.Line] {
-        shoppingList.map {
+        shoppingList.filter { $0.buy > 0 }.map {
             ShoppingListExport.Line(
-                count: $0.count,
+                count: $0.buy,
                 sizeName: $0.size.shortName,
                 dimensions: $0.size.long(units)
             )
@@ -149,11 +175,19 @@ struct MyListScreen: View {
             }
 
             if !shoppingList.isEmpty {
-                Section("Shopping list") {
-                    ForEach(shoppingList, id: \.size.id) { item in
-                        ShoppingRow(size: item.size, count: item.count, units: units)
+                Section {
+                    ForEach(shoppingList, id: \.size.id) { line in
+                        ShoppingRow(line: line, units: units) {
+                            stockTarget = line.size
+                        }
                     }
+                } header: {
+                    Text("Shopping list")
+                } footer: {
+                    Text("Tap a row to record how many sleeves of that size you already own — the list shows what's left to buy.")
                 }
+
+                supplyComingSoon
             } else {
                 Section {
                     InfoNote(icon: "checkmark.circle.fill") {
@@ -165,6 +199,56 @@ struct MyListScreen: View {
             }
         }
         .listStyle(.insetGrouped)
+        .sheet(item: $stockTarget) { size in
+            StockEditorSheet(
+                size: size,
+                units: units,
+                needed: shoppingList.first { $0.size.id == size.id }?.needed ?? 0,
+                initialOwned: stocks.first { $0.sizeID == size.id }?.ownedCount ?? 0,
+                onSave: { owned in setStock(sizeID: size.id, owned: owned) }
+            )
+            .presentationDetents([.height(380)])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    /// The future supply channel, announced where it will live: right under
+    /// the list of sleeves the user needs.
+    private var supplyComingSoon: some View {
+        Section {
+            HStack(spacing: 12) {
+                Image(systemName: "shippingbox.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Theme.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text("Get sleeves delivered")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("COMING SOON")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundStyle(Theme.accent)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Theme.accent.opacity(0.12), in: Capsule())
+                    }
+                    Text("Order exactly these sleeves from SleeveIt, in one tap.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func setStock(sizeID: String, owned: Int) {
+        if let existing = stocks.first(where: { $0.sizeID == sizeID }) {
+            existing.ownedCount = max(0, owned)
+        } else {
+            context.insert(SleeveStock(sizeID: sizeID, ownedCount: max(0, owned)))
+        }
+        try? context.save()
     }
 
     private var emptyState: some View {
@@ -256,6 +340,7 @@ private struct EntryRow: View {
 
     private var title: String {
         if let game { return game.title }
+        if let custom = entry.customTitle { return custom }
         guard let w = entry.measuredWidthMM, let h = entry.measuredHeightMM else {
             return "Measured card"
         }
@@ -335,42 +420,128 @@ private struct EntryRow: View {
 }
 
 private struct ShoppingRow: View {
-    let size: SleeveSize
-    let count: Int
+    let line: MyListScreen.ShoppingLine
     let units: UnitPreference
+    /// Row tap opens the stock editor — managing stock is the row's main job.
+    let onEditStock: () -> Void
     @State private var didCopy = false
 
+    private var isCovered: Bool { line.buy == 0 }
+
+    private var subtitle: String {
+        if line.owned > 0 {
+            return "\(line.needed) needed · \(line.owned) in stock"
+        }
+        return line.size.long(units)
+    }
+
     var body: some View {
-        Button {
-            UIPasteboard.general.string = "\(count)× \(size.name) sleeves (\(size.long(units)))"
-            withAnimation { didCopy = true }
-            Task {
-                try? await Task.sleep(for: .seconds(1.6))
-                withAnimation { didCopy = false }
-            }
-        } label: {
+        Button(action: onEditStock) {
             HStack(spacing: 10) {
-                Text("\(count)×")
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Theme.accent)
+                if isCovered {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Theme.good)
+                } else {
+                    Text("\(line.buy)×")
+                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.accent)
+                }
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(size.shortName)
+                    Text(line.size.shortName)
                         .font(.system(size: 15, weight: .semibold))
-                    Text(size.long(units))
+                    Text(isCovered ? "In stock — nothing to buy" : subtitle)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer(minLength: 0)
 
-                Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
-                    .foregroundStyle(didCopy ? Theme.good : .secondary)
-                    .contentTransition(.symbolEffect(.replace))
+                if !isCovered {
+                    // Copy stays one tap away for pasting into a shop's search.
+                    Button {
+                        UIPasteboard.general.string =
+                            "\(line.buy)× \(line.size.name) sleeves (\(line.size.long(units)))"
+                        withAnimation { didCopy = true }
+                        Task {
+                            try? await Task.sleep(for: .seconds(1.6))
+                            withAnimation { didCopy = false }
+                        }
+                    } label: {
+                        Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
+                            .foregroundStyle(didCopy ? Theme.good : .secondary)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
+    }
+}
+
+/// Records how many sleeves of one size the user owns. The shopping list
+/// subtracts this from what the games need.
+private struct StockEditorSheet: View {
+    let size: SleeveSize
+    let units: UnitPreference
+    let needed: Int
+    let initialOwned: Int
+    let onSave: (Int) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var ownedText = ""
+
+    private var owned: Int { max(0, Int(ownedText) ?? 0) }
+    private var remaining: Int { SleeveMath.netToBuy(needed: needed, owned: owned) }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    LabeledContent("Sleeves I own") {
+                        TextField("0", text: $ownedText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                            .frame(width: 90)
+                    }
+
+                    // One tap per pack size — stock usually arrives in packs.
+                    HStack(spacing: 8) {
+                        ForEach([50, 100], id: \.self) { pack in
+                            Button("+\(pack)") { ownedText = String(owned + pack) }
+                                .buttonStyle(.bordered)
+                                .tint(Theme.accent)
+                        }
+                        Spacer()
+                        Button("Clear", role: .destructive) { ownedText = "0" }
+                            .buttonStyle(.bordered)
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                } footer: {
+                    Text(remaining == 0
+                        ? "Your stock covers everything — nothing to buy in this size."
+                        : "Games need \(needed) · you own \(owned) → buy \(remaining).")
+                }
+            }
+            .navigationTitle(size.shortName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(owned)
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear { ownedText = String(initialOwned) }
+        }
     }
 }

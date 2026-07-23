@@ -13,7 +13,8 @@ struct SleeveItApp: App {
             // needs property defaults), so it's deliberately a v2 decision.
             container = try ModelContainer(
                 for: SleeveSize.self, Game.self, CardDeck.self,
-                ListEntry.self, RecentLookup.self, LearnedCardPrint.self
+                ListEntry.self, RecentLookup.self, LearnedCardPrint.self,
+                SleeveStock.self
             )
         } catch {
             fatalError("Could not create the SleeveIt data store: \(error)")
