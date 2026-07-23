@@ -8,10 +8,17 @@ struct CardMeasurement: Equatable {
     /// Confidence 0…1, derived from how tightly repeated samples agreed.
     var confidence: Double
 
+    /// How much the confirming samples scattered, in mm — the measurement's
+    /// honest uncertainty. 0 when unknown (e.g. manual entry). Feeds the
+    /// matcher so a genuinely close call between two sleeve classes is
+    /// presented as one, never silently guessed.
+    var spreadMM: Double = 0
+
     /// Normalises orientation so a card measured sideways still reads portrait.
     var normalized: CardMeasurement {
         guard widthMM > heightMM else { return self }
-        return CardMeasurement(widthMM: heightMM, heightMM: widthMM, confidence: confidence)
+        return CardMeasurement(
+            widthMM: heightMM, heightMM: widthMM, confidence: confidence, spreadMM: spreadMM)
     }
 }
 
@@ -86,6 +93,22 @@ enum SleeveMatcher {
         sizes.min { lhs, rhs in
             distance(measurement, lhs) < distance(measurement, rhs)
         }
+    }
+
+    /// The best size *and* the runner-up when the measurement's own
+    /// uncertainty can't separate them — sizes differ by a few mm, so an
+    /// honest close call beats a confident wrong answer.
+    static func matchWithAlternative(
+        to measurement: CardMeasurement, in sizes: [SleeveSize]
+    ) -> (best: SleeveSize, alternative: SleeveSize?)? {
+        let ranked = sizes.sorted {
+            distance(measurement, $0) < distance(measurement, $1)
+        }
+        guard let best = ranked.first else { return nil }
+        guard ranked.count > 1 else { return (best, nil) }
+        let separation = distance(measurement, ranked[1]) - distance(measurement, best)
+        let resolvable = max(1.0, 2 * measurement.spreadMM)
+        return (best, separation <= resolvable ? ranked[1] : nil)
     }
 
     static func distance(_ measurement: CardMeasurement, _ size: SleeveSize) -> Double {

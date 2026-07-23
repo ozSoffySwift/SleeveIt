@@ -274,6 +274,131 @@ final class MeasurementTests: XCTestCase {
         XCTAssertEqual(ARCardMeasurer.quadArea(of: square.reversed()), 1.0, accuracy: 1e-9)
     }
 
+    // MARK: - Sub-pixel edge refinement
+
+    func testFitLineRecoversAKnownLine() throws {
+        // Points on y = 2x + 1 with tiny alternating noise.
+        let points = (0..<20).map { i -> CGPoint in
+            let x = Double(i)
+            return CGPoint(x: x, y: 2 * x + 1 + (i.isMultiple(of: 2) ? 0.01 : -0.01))
+        }
+        let line = try XCTUnwrap(EdgeRefinement.fitLine(points))
+        let slope = line.direction.dy / line.direction.dx
+        XCTAssertEqual(slope, 2.0, accuracy: 0.01)
+        XCTAssertEqual(EdgeRefinement.distance(from: CGPoint(x: 5, y: 11), to: line),
+                       0, accuracy: 0.02)
+    }
+
+    func testFitLineHandlesVerticalEdges() throws {
+        // A least-squares y=f(x) fit would blow up here; total least squares must not.
+        let points = (0..<20).map { CGPoint(x: 100.0, y: Double($0)) }
+        let line = try XCTUnwrap(EdgeRefinement.fitLine(points))
+        XCTAssertEqual(abs(line.direction.dy), 1.0, accuracy: 1e-6)
+        XCTAssertEqual(EdgeRefinement.distance(from: CGPoint(x: 103, y: 10), to: line),
+                       3, accuracy: 1e-6)
+    }
+
+    func testLineIntersectionFindsTheCorner() throws {
+        let horizontal = EdgeRefinement.Line(
+            point: CGPoint(x: 0, y: 5), direction: CGVector(dx: 1, dy: 0))
+        let vertical = EdgeRefinement.Line(
+            point: CGPoint(x: 7, y: 0), direction: CGVector(dx: 0, dy: 1))
+        let corner = try XCTUnwrap(EdgeRefinement.intersection(horizontal, vertical))
+        XCTAssertEqual(corner.x, 7, accuracy: 1e-9)
+        XCTAssertEqual(corner.y, 5, accuracy: 1e-9)
+        XCTAssertNil(EdgeRefinement.intersection(horizontal, horizontal), "parallel lines")
+    }
+
+    func testParabolicPeakInterpolatesSubSample() {
+        // Symmetric samples peak exactly at the centre.
+        XCTAssertEqual(EdgeRefinement.parabolicPeak(1, 2, 1), 0, accuracy: 1e-9)
+        // A stronger right neighbour pulls the vertex right; bounded to ±0.5.
+        XCTAssertGreaterThan(EdgeRefinement.parabolicPeak(1, 2, 1.9), 0)
+        XCTAssertLessThanOrEqual(abs(EdgeRefinement.parabolicPeak(0, 1, 1)), 0.5)
+    }
+
+    // MARK: - LiDAR plane fit
+
+    func testPlaneFitRecoversAKnownTable() throws {
+        // Points on the plane y = 0.02x - 0.01z + 0.5, i.e. a slightly tilted table.
+        var points: [simd_float3] = []
+        for i in 0..<5 {
+            for j in 0..<5 {
+                let x = Float(i) * 0.02 - 0.04
+                let z = Float(j) * 0.02 - 0.04
+                points.append(simd_float3(x, 0.02 * x - 0.01 * z + 0.5, z))
+            }
+        }
+        let fit = try XCTUnwrap(ARCardMeasurer.fitHorizontalPlane(points))
+        // The fitted normal must be perpendicular to the plane's slope.
+        let expected = simd_normalize(simd_float3(-0.02, 1, 0.01))
+        XCTAssertEqual(simd_dot(fit.normal, expected), 1, accuracy: 1e-4)
+        // Centroid sits on the plane.
+        let residual = 0.02 * fit.point.x - 0.01 * fit.point.z + 0.5 - fit.point.y
+        XCTAssertEqual(residual, 0, accuracy: 1e-5)
+    }
+
+    func testPlaneFitRejectsTooFewPoints() {
+        let few = (0..<5).map { simd_float3(Float($0), 0, 0) }
+        XCTAssertNil(ARCardMeasurer.fitHorizontalPlane(few))
+    }
+
+    // MARK: - Calibration
+
+    func testCalibrationFactorFromPerfectScanIsIdentity() throws {
+        let scan = CardMeasurement(widthMM: 53.98, heightMM: 85.60, confidence: 1)
+        let factor = try XCTUnwrap(ScaleCalibration.factor(measured: scan, appliedFactor: 1.0))
+        XCTAssertEqual(factor, 1.0, accuracy: 1e-9)
+    }
+
+    func testCalibrationFactorCorrectsAUniformScaleError() throws {
+        // Device reads 2% large → factor must shrink by 2%.
+        let scan = CardMeasurement(widthMM: 53.98 * 1.02, heightMM: 85.60 * 1.02, confidence: 1)
+        let factor = try XCTUnwrap(ScaleCalibration.factor(measured: scan, appliedFactor: 1.0))
+        XCTAssertEqual(factor, 1 / 1.02, accuracy: 1e-6)
+    }
+
+    func testCalibrationComposesOnAnExistingFactor() throws {
+        // Already correcting 0.98; the scan (with that correction applied)
+        // still reads 1% large → composed factor ≈ 0.98 / 1.01.
+        let scan = CardMeasurement(widthMM: 53.98 * 1.01, heightMM: 85.60 * 1.01, confidence: 1)
+        let factor = try XCTUnwrap(ScaleCalibration.factor(measured: scan, appliedFactor: 0.98))
+        XCTAssertEqual(factor, 0.98 / 1.01, accuracy: 1e-6)
+    }
+
+    func testCalibrationRejectsAScanThatIsNotABankCard() {
+        // A poker card is nowhere near ISO ID-1 dimensions.
+        let scan = CardMeasurement(widthMM: 63.5, heightMM: 88, confidence: 1)
+        XCTAssertNil(ScaleCalibration.factor(measured: scan, appliedFactor: 1.0))
+    }
+
+    // MARK: - Uncertainty-aware matching
+
+    func testMedianCarriesSampleScatterAsSpread() throws {
+        let samples = [63.2, 63.5, 63.6, 63.5, 64.0].map {
+            CardMeasurement(widthMM: $0, heightMM: 88, confidence: 1)
+        }
+        let merged = try XCTUnwrap(ARCardMeasurer.median(of: samples))
+        XCTAssertEqual(merged.widthMM, 63.5, accuracy: 1e-9)
+        XCTAssertGreaterThanOrEqual(merged.spreadMM, 0.3, "floor keeps honesty")
+        XCTAssertLessThan(merged.spreadMM, 1.0)
+    }
+
+    func testTightMeasurementResolvesToASingleSize() throws {
+        let tight = CardMeasurement(widthMM: 63.4, heightMM: 88.1, confidence: 1, spreadMM: 0.3)
+        let match = try XCTUnwrap(SleeveMatcher.matchWithAlternative(to: tight, in: makeSizes()))
+        XCTAssertEqual(match.best.id, "standard")
+        XCTAssertNil(match.alternative, "multi-mm separation is decisive at 0.3mm spread")
+    }
+
+    func testUncertainMeasurementSurfacesTheRunnerUp() throws {
+        // Halfway between Standard American (57.5×89) and Catan (59×92),
+        // scanned with a wobbly hand.
+        let wobbly = CardMeasurement(widthMM: 58.2, heightMM: 90.4, confidence: 0.6, spreadMM: 1.6)
+        let match = try XCTUnwrap(SleeveMatcher.matchWithAlternative(to: wobbly, in: makeSizes()))
+        XCTAssertNotNil(match.alternative, "ambiguity must be surfaced, not guessed away")
+    }
+
     // MARK: - Units
 
     func testMillimetreFormattingTrimsWholeNumbersOnly() {

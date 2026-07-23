@@ -47,6 +47,16 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         }
     }
 
+    /// Scan-geometry feedback. Accuracy collapses outside a fairly generous
+    /// envelope (LiDAR's ~20cm minimum range, edge smear at heavy tilt), so
+    /// out-of-envelope frames steer the user instead of feeding the lock.
+    enum Guidance: Equatable {
+        case ok
+        case tooClose
+        case tooFar
+        case tooTilted
+    }
+
     /// One processed frame's outcome: the physical size plus where the card sits
     /// on screen, so the UI can draw its frame on the card rather than centred.
     struct DetectionResult {
@@ -56,9 +66,13 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         /// A crop of the card from this frame, captured only while the lock
         /// countdown runs, so the locked screen can present the card itself.
         var cardImage: CGImage?
+        /// Whether this frame's geometry was good enough to count.
+        var guidance: Guidance = .ok
     }
 
     @Published private(set) var phase: Phase = .findingSurface
+    /// Live scan-geometry hint; drives the pill copy while a card is in view.
+    @Published private(set) var guidance: Guidance = .ok
     /// The detected card's corners in view coordinates, for drawing the scan
     /// frame on the card itself. Retains its last value after a lock so the
     /// locked overlay stays on the card.
@@ -226,7 +240,6 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         }
 
         lastDetectionAt = .now
-        confirmMisses = 0
         if result.viewQuad.count == 4 {
             cardQuad = result.viewQuad
         }
@@ -235,6 +248,25 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         }
 
         let measurement = result.measurement.normalized
+
+        // Out-of-envelope frames steer the user (pill copy) but never feed the
+        // lock — accuracy is why they're out of envelope. Mid-countdown they
+        // count against the same miss grace as a lost detection.
+        guard result.guidance == .ok else {
+            guidance = result.guidance
+            if lockCandidate != nil {
+                if confirmMisses < confirmMissGrace {
+                    confirmMisses += 1
+                } else {
+                    cancelLockCountdown()
+                    stabilizer.reset()
+                }
+            }
+            phase = .detecting(measurement)
+            return
+        }
+        guidance = .ok
+        confirmMisses = 0
 
         // --- Confirm stage ---
         if let candidate = lockCandidate, let since = settledSince {
@@ -278,12 +310,27 @@ final class ARCardMeasurer: NSObject, ObservableObject {
     }
 
     /// Per-dimension median — robust to the odd outlier in the confirm window.
+    /// The samples' scatter (median absolute deviation, σ-scaled) rides along
+    /// as the measurement's honest uncertainty.
     nonisolated static func median(of samples: [CardMeasurement]) -> CardMeasurement? {
         guard !samples.isEmpty else { return nil }
-        let width = samples.map(\.widthMM).sorted()[samples.count / 2]
-        let height = samples.map(\.heightMM).sorted()[samples.count / 2]
+        let widths = samples.map(\.widthMM)
+        let heights = samples.map(\.heightMM)
+        let width = widths.sorted()[samples.count / 2]
+        let height = heights.sorted()[samples.count / 2]
         let confidence = samples.map(\.confidence).max() ?? 0.5
-        return CardMeasurement(widthMM: width, heightMM: height, confidence: confidence)
+        let spread = max(scaledMAD(of: widths, around: width),
+                         scaledMAD(of: heights, around: height))
+        return CardMeasurement(
+            widthMM: width, heightMM: height, confidence: confidence,
+            spreadMM: max(spread, 0.3))
+    }
+
+    /// Median absolute deviation scaled to a standard-deviation equivalent.
+    nonisolated static func scaledMAD(of values: [Double], around median: Double) -> Double {
+        guard !values.isEmpty else { return 0 }
+        let deviations = values.map { abs($0 - median) }.sorted()
+        return deviations[deviations.count / 2] * 1.4826
     }
 
     private func cancelLockCountdown() {
@@ -298,6 +345,7 @@ final class ARCardMeasurer: NSObject, ObservableObject {
     private func noteMissingCard() {
         stabilizer.reset()
         cardQuad = nil
+        guidance = .ok
         cancelLockCountdown()
 
         guard let since = lastDetectionAt ?? startedAt else { return }
@@ -416,31 +464,55 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         viewport: CGSize,
         includeSnapshot: Bool
     ) -> DetectionResult? {
-        let corners = [
+        let visionCorners = [
             observation.topLeft,
             observation.topRight,
             observation.bottomRight,
             observation.bottomLeft,
         ]
+        let imageWidth = Float(CVPixelBufferGetWidth(frame.capturedImage))
+        let imageHeight = Float(CVPixelBufferGetHeight(frame.capturedImage))
 
-        // 1. The card's plane. The anchor *point* sets the measurement's scale,
-        // so its priority order is: LiDAR depth at the quad's centre (a direct
-        // time-of-flight distance), then a raycast against detected plane
-        // geometry, then an estimated plane. The raycast still supplies the
-        // plane's *orientation* when it hits; failing that, gravity alignment
-        // makes straight-up the honest normal for a horizontal table.
-        let center = CGPoint(
-            x: corners.map(\.x).reduce(0, +) / 4,
-            y: corners.map(\.y).reduce(0, +) / 4
+        // 1. Sub-pixel corners. Vision's whole-pixel corners cost ~0.2mm per
+        // pixel of error at scan distance; refining against the luma gradient
+        // recovers the physical edge to a fraction of a pixel. Falls back to
+        // the coarse quad whenever the edges can't be traced (glare, motion).
+        let coarsePixels = visionCorners.map { corner -> CGPoint in
+            let sensor = sensorPoint(fromVisionPoint: corner)
+            return CGPoint(
+                x: sensor.x * CGFloat(imageWidth),
+                y: sensor.y * CGFloat(imageHeight))
+        }
+        let buffer = frame.capturedImage
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        let refinedPixels = LumaPlane(lockedBuffer: buffer)
+            .map { EdgeRefinement.refine(corners: coarsePixels, luma: $0) } ?? coarsePixels
+        CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+
+        let sensorCorners = refinedPixels.map { pixel in
+            CGPoint(x: pixel.x / CGFloat(imageWidth), y: pixel.y / CGFloat(imageHeight))
+        }
+
+        // 2. The card's plane. The anchor *point* sets the measurement's scale,
+        // so its priority order is: a least-squares plane fitted through LiDAR
+        // depth across the whole card region (dozens of direct time-of-flight
+        // samples), then the single-point depth anchor, then a raycast. The
+        // fitted plane also supplies the truest *orientation*; the raycast is
+        // next, and gravity's straight-up is the honest fallback for a
+        // horizontal table.
+        let sensorCenter = CGPoint(
+            x: sensorCorners.map(\.x).reduce(0, +) / 4,
+            y: sensorCorners.map(\.y).reduce(0, +) / 4
         )
-        let sensorCenter = sensorPoint(fromVisionPoint: center)
         var planeHit = session.raycast(frame.raycastQuery(
             from: sensorCenter, allowing: .existingPlaneGeometry, alignment: .horizontal)).first
         if planeHit == nil {
             planeHit = session.raycast(frame.raycastQuery(
                 from: sensorCenter, allowing: .estimatedPlane, alignment: .horizontal)).first
         }
-        let depthPoint = depthAnchoredPoint(frame: frame, sensorPoint: sensorCenter)
+        let depthFit = depthPlane(frame: frame, sensorQuad: sensorCorners)
+        let depthPoint = depthFit?.point
+            ?? depthAnchoredPoint(frame: frame, sensorPoint: sensorCenter)
 
         let planePoint: simd_float3
         if let depthPoint {
@@ -452,26 +524,43 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         }
 
         var planeNormal = simd_float3(0, 1, 0)
-        if let planeHit {
+        if let depthFit {
+            planeNormal = depthFit.normal
+        } else if let planeHit {
             let rawNormal = simd_make_float3(planeHit.worldTransform.columns.1)
             if simd_length(rawNormal) > 0.5 {
                 planeNormal = simd_normalize(rawNormal)
             }
         }
 
-        // 2. Each corner's camera ray, intersected with that plane.
+        // 3. Each refined corner's camera ray, intersected with that plane.
         let camera = frame.camera
         let cameraTransform = camera.transform
         let rayOrigin = simd_make_float3(cameraTransform.columns.3)
         let intrinsics = camera.intrinsics
-        let imageWidth = Float(CVPixelBufferGetWidth(frame.capturedImage))
-        let imageHeight = Float(CVPixelBufferGetHeight(frame.capturedImage))
 
-        let sensorCorners = corners.map { sensorPoint(fromVisionPoint: $0) }
-        let points = sensorCorners.compactMap { sensor -> simd_float3? in
+        // Scan-geometry envelope. Distance: LiDAR floors out near 20cm and
+        // pixel density (accuracy) falls with range. Tilt: the math handles
+        // perspective, but edge contrast and corner precision degrade fast
+        // past ~35° — c2.y is the cosine of the look-down angle under gravity
+        // alignment.
+        let cameraDistance = simd_distance(rayOrigin, planePoint)
+        let lookDownCosine = cameraTransform.columns.2.y
+        let guidance: Guidance
+        if cameraDistance < 0.18 {
+            guidance = .tooClose
+        } else if cameraDistance > 0.55 {
+            guidance = .tooFar
+        } else if lookDownCosine < 0.82 {
+            guidance = .tooTilted
+        } else {
+            guidance = .ok
+        }
+
+        let points = refinedPixels.compactMap { pixel -> simd_float3? in
             let directionCamera = cameraRayDirection(
-                pixelX: Float(sensor.x) * imageWidth,
-                pixelY: Float(sensor.y) * imageHeight,
+                pixelX: Float(pixel.x),
+                pixelY: Float(pixel.y),
                 fx: intrinsics[0][0], fy: intrinsics[1][1],
                 ox: intrinsics[2][0], oy: intrinsics[2][1]
             )
@@ -491,8 +580,13 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         let left = simd_distance(points[0], points[3])
         let right = simd_distance(points[1], points[2])
 
-        let widthMM = Double((top + bottom) / 2) * 1000
-        let heightMM = Double((left + right) / 2) * 1000
+        // Device scale correction from the credit-card calibration; 1.0 when
+        // never calibrated. Bounded so a corrupted default can't distort.
+        let stored = UserDefaults.standard.double(forKey: calibrationKey)
+        let calibration = (0.9...1.1).contains(stored) ? stored : 1.0
+
+        let widthMM = Double((top + bottom) / 2) * 1000 * calibration
+        let heightMM = Double((left + right) / 2) * 1000 * calibration
 
         // Reject nonsense early — a raycast that hit the floor instead of the
         // table produces implausibly large values.
@@ -505,14 +599,14 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         let heightSkew = abs(Double(left - right)) * 1000
         guard widthSkew < 6, heightSkew < 6 else { return nil }
 
-        // 3. The card's on-screen quad, so the UI can draw its frame on the
+        // 4. The card's on-screen quad, so the UI can draw its frame on the
         // card. displayTransform maps sensor-space normalized points into the
         // viewport exactly as ARKit renders the camera image (aspect-filled).
         var viewQuad: [CGPoint] = []
         if viewport.width > 1, viewport.height > 1 {
             let transform = frame.displayTransform(for: .portrait, viewportSize: viewport)
-            viewQuad = corners.map { corner in
-                let normalized = sensorPoint(fromVisionPoint: corner).applying(transform)
+            viewQuad = sensorCorners.map { sensor in
+                let normalized = sensor.applying(transform)
                 return CGPoint(x: normalized.x * viewport.width, y: normalized.y * viewport.height)
             }
         }
@@ -522,8 +616,14 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         let snapshot = includeSnapshot
             ? cropCardImage(from: frame, sensorCorners: sensorCorners)
             : nil
-        return DetectionResult(measurement: measurement, viewQuad: viewQuad, cardImage: snapshot)
+        return DetectionResult(
+            measurement: measurement, viewQuad: viewQuad, cardImage: snapshot,
+            guidance: guidance)
     }
+
+    /// UserDefaults key holding the device's scale correction factor, written
+    /// by the credit-card calibration flow (1.0 = no correction).
+    nonisolated static let calibrationKey = "scaleCalibration"
 
     /// Crops the card (plus a small margin) out of the captured frame and
     /// rotates it upright, for the locked screen's centred presentation.
@@ -647,6 +747,122 @@ final class ARCardMeasurer: NSObject, ObservableObject {
         )
         let world = frame.camera.transform * simd_float4(local, 1)
         return simd_make_float3(world)
+    }
+
+    /// Fits the card's supporting plane through LiDAR depth sampled across the
+    /// whole card region, not just its centre.
+    ///
+    /// A single depth texel carries the sensor's full noise; a least-squares
+    /// plane through a 6×6 grid of them averages that noise down an order of
+    /// magnitude *and* recovers the surface's true orientation. Samples come
+    /// from the quad's interior (15% inset) so none straddle the card's edge.
+    nonisolated private static func depthPlane(
+        frame: ARFrame, sensorQuad: [CGPoint]
+    ) -> (point: simd_float3, normal: simd_float3)? {
+        guard sensorQuad.count == 4,
+              let depthData = frame.smoothedSceneDepth ?? frame.sceneDepth
+        else { return nil }
+        let depthMap = depthData.depthMap
+        guard CVPixelBufferGetPixelFormatType(depthMap) == kCVPixelFormatType_DepthFloat32 else {
+            return nil
+        }
+
+        let width = CVPixelBufferGetWidth(depthMap)
+        let height = CVPixelBufferGetHeight(depthMap)
+        let intrinsics = frame.camera.intrinsics
+        let imageWidth = Float(CVPixelBufferGetWidth(frame.capturedImage))
+        let imageHeight = Float(CVPixelBufferGetHeight(frame.capturedImage))
+        let cameraTransform = frame.camera.transform
+
+        var confidenceBase: UnsafeRawPointer?
+        var confidenceRowBytes = 0
+        if let confidenceMap = depthData.confidenceMap {
+            CVPixelBufferLockBaseAddress(confidenceMap, .readOnly)
+            confidenceBase = CVPixelBufferGetBaseAddress(confidenceMap).map(UnsafeRawPointer.init)
+            confidenceRowBytes = CVPixelBufferGetBytesPerRow(confidenceMap)
+        }
+        defer {
+            if let confidenceMap = depthData.confidenceMap {
+                CVPixelBufferUnlockBaseAddress(confidenceMap, .readOnly)
+            }
+        }
+
+        CVPixelBufferLockBaseAddress(depthMap, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(depthMap, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddress(depthMap) else { return nil }
+        let rowBytes = CVPixelBufferGetBytesPerRow(depthMap)
+
+        var worldPoints: [simd_float3] = []
+        let grid = 6
+        for row in 0..<grid {
+            for column in 0..<grid {
+                // Bilinear interpolation across the quad's interior.
+                let u = 0.15 + 0.7 * CGFloat(column) / CGFloat(grid - 1)
+                let v = 0.15 + 0.7 * CGFloat(row) / CGFloat(grid - 1)
+                let topX = sensorQuad[0].x + (sensorQuad[1].x - sensorQuad[0].x) * u
+                let topY = sensorQuad[0].y + (sensorQuad[1].y - sensorQuad[0].y) * u
+                let bottomX = sensorQuad[3].x + (sensorQuad[2].x - sensorQuad[3].x) * u
+                let bottomY = sensorQuad[3].y + (sensorQuad[2].y - sensorQuad[3].y) * u
+                let sensor = CGPoint(
+                    x: topX + (bottomX - topX) * v,
+                    y: topY + (bottomY - topY) * v)
+
+                let px = min(max(Int(sensor.x * CGFloat(width)), 0), width - 1)
+                let py = min(max(Int(sensor.y * CGFloat(height)), 0), height - 1)
+
+                if let confidenceBase {
+                    let level = confidenceBase.advanced(by: py * confidenceRowBytes + px)
+                        .assumingMemoryBound(to: UInt8.self).pointee
+                    guard level >= UInt8(ARConfidenceLevel.medium.rawValue) else { continue }
+                }
+                let depth = base.advanced(by: py * rowBytes + px * MemoryLayout<Float32>.stride)
+                    .assumingMemoryBound(to: Float32.self).pointee
+                guard depth.isFinite, depth > 0.1, depth < 2.0 else { continue }
+
+                let local = cameraPoint(
+                    pixelX: Float(sensor.x) * imageWidth,
+                    pixelY: Float(sensor.y) * imageHeight,
+                    depth: depth,
+                    fx: intrinsics[0][0], fy: intrinsics[1][1],
+                    ox: intrinsics[2][0], oy: intrinsics[2][1]
+                )
+                worldPoints.append(simd_make_float3(cameraTransform * simd_float4(local, 1)))
+            }
+        }
+
+        guard let fit = fitHorizontalPlane(worldPoints) else { return nil }
+        // A fit leaning more than ~25° from vertical isn't a table under a
+        // card — likely samples straddled an edge. Reject rather than skew.
+        guard fit.normal.y > 0.9 else { return nil }
+        return fit
+    }
+
+    /// Least-squares plane through world points, parameterised as
+    /// y = ax + bz + c — valid for the near-horizontal surfaces this app
+    /// measures on (gravity world alignment guarantees y is up).
+    nonisolated static func fitHorizontalPlane(
+        _ points: [simd_float3]
+    ) -> (point: simd_float3, normal: simd_float3)? {
+        guard points.count >= 8 else { return nil }
+        let n = Double(points.count)
+        var sx = 0.0, sy = 0.0, sz = 0.0
+        var sxx = 0.0, szz = 0.0, sxz = 0.0, sxy = 0.0, szy = 0.0
+        for p in points {
+            let x = Double(p.x), y = Double(p.y), z = Double(p.z)
+            sx += x; sy += y; sz += z
+            sxx += x * x; szz += z * z; sxz += x * z
+            sxy += x * y; szy += z * y
+        }
+        let m = simd_double3x3(rows: [
+            simd_double3(sxx, sxz, sx),
+            simd_double3(sxz, szz, sz),
+            simd_double3(sx, sz, n),
+        ])
+        guard abs(m.determinant) > 1e-12 else { return nil }
+        let abc = m.inverse * simd_double3(sxy, szy, sy)
+        let normal = simd_normalize(simd_float3(Float(-abc.x), 1, Float(-abc.y)))
+        let centroid = simd_float3(Float(sx / n), Float(sy / n), Float(sz / n))
+        return (centroid, normal)
     }
 
     /// Ray–plane intersection; nil when the ray is parallel to or points away

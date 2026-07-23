@@ -221,7 +221,16 @@ struct MeasureScreen: View {
             case .searching:
                 PillHint(text: "Looking for a card", style: .searching)
             case .detecting:
-                PillHint(text: "Hold steady, locking on", style: .detecting)
+                switch measurer.guidance {
+                case .tooClose:
+                    PillHint(text: "Move back a little", style: .searching)
+                case .tooFar:
+                    PillHint(text: "Move closer to the card", style: .searching)
+                case .tooTilted:
+                    PillHint(text: "Hold the phone flat over the card", style: .searching)
+                case .ok:
+                    PillHint(text: "Hold steady, locking on", style: .detecting)
+                }
             case .failed(let reason):
                 ErrorCard(
                     reason: reason,
@@ -824,6 +833,12 @@ private struct ResultSheet: View {
         SleeveMatcher.nearest(to: measurement, in: sizes)
     }
 
+    /// The runner-up size when the measurement's own uncertainty can't
+    /// separate it from the winner — surfaced rather than silently guessed.
+    private var closeAlternative: SleeveSize? {
+        SleeveMatcher.matchWithAlternative(to: measurement, in: sizes)?.alternative
+    }
+
     private var candidates: [GameCandidate] {
         guard let match else { return [] }
         return SizeBasedGameIdentifier()
@@ -966,7 +981,15 @@ private struct ResultSheet: View {
                 SizeBadge(size: size, units: units, style: .filled)
             }
 
-            if !SleeveMatcher.isConfident(measurement, size) {
+            if let alternative = closeAlternative {
+                Label {
+                    Text("Close call with **\(alternative.shortName)** (\(units.long(width: alternative.widthMM, height: alternative.heightMM))) — check the size printed on the game box.")
+                } icon: {
+                    Image(systemName: "scale.3d")
+                }
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.warning)
+            } else if !SleeveMatcher.isConfident(measurement, size) {
                 Label(
                     "This is the closest standard size, but it's not an exact match. Check the fit before buying.",
                     systemImage: "exclamationmark.triangle.fill"

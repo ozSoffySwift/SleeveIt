@@ -11,6 +11,9 @@ struct SettingsScreen: View {
 
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
+    @State private var isCalibrationPresented = false
+    /// Bumped on reset so the section re-reads the calibration state.
+    @State private var calibrationVersion = 0
 
     // MARK: - Pro
 
@@ -114,6 +117,34 @@ struct SettingsScreen: View {
             }
 
             Section {
+                Button {
+                    isCalibrationPresented = true
+                } label: {
+                    HStack {
+                        Label("Calibrate with a bank card", systemImage: "scope")
+                        Spacer()
+                        Text(ScaleCalibration.isCalibrated ? "Calibrated" : "Not yet")
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
+                    }
+                }
+
+                if ScaleCalibration.isCalibrated {
+                    Button(role: .destructive) {
+                        ScaleCalibration.reset()
+                        calibrationVersion += 1
+                    } label: {
+                        Label("Reset calibration", systemImage: "arrow.uturn.backward")
+                    }
+                }
+            } header: {
+                Text("Measurement accuracy")
+            } footer: {
+                Text("Any credit or bank card is exactly 85.6 × 54.0 mm — scanning one measures your device's tiny scale bias and corrects every future measurement.")
+            }
+            .id(calibrationVersion)
+
+            Section {
                 Picker(selection: $units) {
                     ForEach(UnitPreference.allCases) { option in
                         Text(option.label).tag(option)
@@ -178,6 +209,10 @@ struct SettingsScreen: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
+        .fullScreenCover(isPresented: $isCalibrationPresented) {
+            CalibrationScreen()
+                .onDisappear { calibrationVersion += 1 }
+        }
     }
 
     private func refreshCatalog() async {
