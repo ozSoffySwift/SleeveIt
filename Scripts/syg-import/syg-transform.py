@@ -216,7 +216,7 @@ for line in exp_lines:
 
 catalog["games"].extend(added)
 catalog["version"] = 7
-json.dump(catalog, open(CATALOG_OUT, "w"), indent=1)
+json.dump(catalog, open(CATALOG_OUT, "w"), separators=(",", ":"), ensure_ascii=False)
 open(CATALOG_OUT, "a").write("\n")
 
 print(f"added: {len(added)} (expansions linked: {linked}, unlinked: {dropped_links}, dup: {exp_dup}, no decks: {exp_nodeck})")
