@@ -221,7 +221,7 @@ struct GameDetailScreen: View {
         Button {
             addToList()
         } label: {
-            Label(isInList ? "In My List" : "Add to My List",
+            Label(isInList ? "In My Sleeves" : "Add to My Sleeves",
                   systemImage: isInList ? "checkmark" : "plus")
         }
         .buttonStyle(PrimaryButtonStyle(isEnabled: !isInList))

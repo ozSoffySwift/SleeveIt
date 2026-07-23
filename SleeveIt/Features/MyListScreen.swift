@@ -57,7 +57,7 @@ struct MyListScreen: View {
                     list
                 }
             }
-            .navigationTitle("My List")
+            .navigationTitle("My Sleeves")
             .navigationDestination(for: Game.self) { GameDetailScreen(game: $0) }
             .onAppear { publishSnapshot() }
             .onChange(of: snapshotFingerprint) { publishSnapshot() }

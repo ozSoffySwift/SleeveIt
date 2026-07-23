@@ -129,7 +129,7 @@ final class CardDeck {
 
 // MARK: - User data
 
-/// An entry on My List — either a catalog game or a card the user measured.
+/// An entry on My Sleeves — either a catalog game or a card the user measured.
 @Model
 final class ListEntry {
     @Attribute(.unique) var id: UUID

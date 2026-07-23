@@ -125,7 +125,7 @@ struct BGGImportScreen: View {
                 }
             }
 
-            Button("Add \(addableCount) game\(addableCount == 1 ? "" : "s") to My List") {
+            Button("Add \(addableCount) game\(addableCount == 1 ? "" : "s") to My Sleeves") {
                 importMatched()
             }
             .disabled(addableCount == 0)

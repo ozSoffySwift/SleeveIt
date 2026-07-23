@@ -26,7 +26,7 @@ struct RootView: View {
                 .tag(Tab.search)
 
             MyListScreen(isMeasurePresented: $isMeasurePresented, selectedTab: $selectedTab)
-                .tabItem { Label("My List", systemImage: "checklist") }
+                .tabItem { Label("My Sleeves", systemImage: "checklist") }
                 .tag(Tab.list)
 
             ReferenceScreen()
@@ -36,7 +36,7 @@ struct RootView: View {
         .tint(Theme.accent)
         .preferredColorScheme(appearance.colorScheme)
         // The camera is a full-screen cover launched from the Measure CTA, the
-        // My List buttons, and the "Measure a Card" Shortcut — not its own tab.
+        // My Sleeves buttons, and the "Measure a Card" Shortcut — not its own tab.
         .fullScreenCover(isPresented: $isMeasurePresented) {
             MeasureScreen()
         }

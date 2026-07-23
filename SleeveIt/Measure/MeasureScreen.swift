@@ -873,7 +873,7 @@ private struct ResultSheet: View {
                     freeTeaser
                 }
 
-                Button("Add sleeve to My List", systemImage: "plus") { onAddSleeve(match) }
+                Button("Add sleeve to My Sleeves", systemImage: "plus") { onAddSleeve(match) }
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.top, 12)
             }

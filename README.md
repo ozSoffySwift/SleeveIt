@@ -16,9 +16,9 @@ SwiftUI · SwiftData · ARKit · Vision · WidgetKit · App Intents · iOS 17+ �
 
 ## Screenshots
 
-| Measure | Game detail | My List |
+| Measure | Game detail | My Sleeves |
 |:---:|:---:|:---:|
-| ![Measure](Marketing/Measure_1242x2688.png) | ![Game detail](Marketing/GameDetail_1242x2688.png) | ![My List](Marketing/MyList_1242x2688.png) |
+| ![Measure](Marketing/Measure_1242x2688.png) | ![Game detail](Marketing/GameDetail_1242x2688.png) | ![My Sleeves](Marketing/MySleeves_1242x2688.png) |
 
 | Reference | Settings |
 |:---:|:---:|
@@ -34,7 +34,7 @@ SwiftUI · SwiftData · ARKit · Vision · WidgetKit · App Intents · iOS 17+ �
 - **Search a catalog** of 9,000+ games and see every deck's card count and size, expansions
   included. Card size data licensed from [SleeveYourGames.com](https://www.sleeveyourgames.com),
   used with permission.
-- **My List** consolidates every game (and measured card) into one shopping list — "buy 892
+- **My Sleeves** consolidates every game (and measured card) into one shopping list — "buy 892
   Standard, 434 Mini American" — with sleeved-progress tracking and share/export.
 - **Import your BoardGameGeek collection** (read-only) to seed the list.
 - **Reference** cheat-sheet of every standard sleeve size, drawn to scale.
@@ -96,7 +96,7 @@ Serve the same JSON shape with an incremented `version`. The client sends `If-No
 
 ### Catalog data accuracy
 
-The seed ships 124 games (expansions included) and 10 sleeve standards. **Card counts need verifying before you ship.** They were compiled from general knowledge of these games, not transcribed from a authoritative source, and counts legitimately vary between printings, editions and localisations — a second-edition box often differs from the first. Treat the numbers as a strong starting point, not ground truth. The app already tells users sizes vary by printing, but a wrong count means someone buys the wrong number of sleeves.
+The seed ships 8,800+ games (expansions included) and 33 sleeve standards — 124 hand-curated entries plus data from SleeveYourGames.com, used with permission. **Card counts need verifying before you ship.** They were compiled from general knowledge of these games, not transcribed from a authoritative source, and counts legitimately vary between printings, editions and localisations — a second-edition box often differs from the first. Treat the numbers as a strong starting point, not ground truth. The app already tells users sizes vary by printing, but a wrong count means someone buys the wrong number of sleeves.
 
 Cross-checking against the [Card Size Database geeklist](https://boardgamegeek.com/geeklist/48357/card-size-database) is the fastest way to firm them up.
 
@@ -138,7 +138,7 @@ So the two systems do different jobs: BGG says *which games the user owns*, the 
 Four "core depth" features, all catalog- or geometry-driven (no backend needed to run, except
 corrections — see below).
 
-**Sleeved progress.** My List shows an "X of Y sleeved" header and bar. The per-row toggle (the
+**Sleeved progress.** My Sleeves shows an "X of Y sleeved" header and bar. The per-row toggle (the
 `ListEntry.isOwned` field, surfaced as "Sleeved") both marks completion and drops the game from
 the shopping list. The field name stays `isOwned` in the store — renaming a `@Model` property is
 a migration for no benefit; only the user-facing copy changed.
@@ -178,13 +178,13 @@ Info.plist permission (it runs out of process).
 Four more features. Two are fully self-contained; two carry an external dependency you must
 provision (noted below).
 
-**Share / export the shopping list.** My List's toolbar share menu exports the consolidated list
+**Share / export the shopping list.** My Sleeves' toolbar share menu exports the consolidated list
 as text or a PDF (`ShoppingListExport`, pure text builder + `UIGraphicsPDFRenderer`). Verified;
 unit-tested.
 
 **Widget + Shortcuts.** A `SleeveItWidgetExtension` target shows "N sleeves to buy" (small and
 medium families). It reads a tiny snapshot the app writes to an **App Group**
-(`group.com.ozsoffy.SleeveIt`) on every My List change — not a shared SwiftData store, just a few
+(`group.com.ozsoffy.SleeveIt`) on every My Sleeves change — not a shared SwiftData store, just a few
 numbers, which is far more robust for a widget. App Intents (`MeasureCardIntent`,
 `SleevesToBuyIntent`) expose "Measure a card" and "Sleeves to buy" to Siri and Shortcuts. The
 widget appex is embedded in the app bundle (verified in `PlugIns/`).
@@ -193,7 +193,7 @@ widget appex is embedded in the app bundle (verified in `PlugIns/`).
   must be enabled for both targets in the Apple Developer account (it's in the entitlements
   files under `Support/`).
 
-**iCloud sync of My List — deferred to a future version.** SwiftData stays **local-only** in v1
+**iCloud sync of My Sleeves — deferred to a future version.** SwiftData stays **local-only** in v1
 (one `ModelContainer`, all models). iCloud sync of user data (`ListEntry`, `RecentLookup`,
 `LearnedCardPrint`) is planned for v2.
 
@@ -227,7 +227,7 @@ everything taught (`CardArtworkRecognizer` → `GameIdentifying`).
 | Identify which game the card is from | — | ✓ |
 | Full deck breakdown for that game | — | ✓ |
 | Add every deck to the basket at once | — | ✓ |
-| Search, catalog, My List, Reference, BGG import | ✓ | ✓ |
+| Search, catalog, My Sleeves, Reference, BGG import | ✓ | ✓ |
 
 `Entitlements.isPro` is the single switch — set it from a StoreKit 2 check and every gate opens at once. Settings shows a "Coming soon" card: an announcement, not a purchase flow, so the button is inert rather than leading somewhere that doesn't exist.
 
@@ -245,7 +245,7 @@ The Pro flow is: measure a card → identify the game → see every deck → add
 
 Two things make it useful anyway:
 
-1. **Games the user owns rank first** — from My List and any imported BGG collection. "Which of your 4 games is this?" is a genuinely useful question; "which of 28 catalog games is this?" is not. This is why the BGG import and the Pro feature reinforce each other.
+1. **Games the user owns rank first** — from My Sleeves and any imported BGG collection. "Which of your 4 games is this?" is a genuinely useful question; "which of 28 catalog games is this?" is not. This is why the BGG import and the Pro feature reinforce each other.
 2. **Once confirmed, the payoff is real.** Measuring one Wingspan bird card yields all 196 sleeves, including the 26 mini ones the user would not have thought to count.
 
 **True automatic recognition is not implemented.** It would mean matching the card's *artwork* against a reference image per card — `VNGenerateImageFeaturePrintRequest` can compute the similarity, but it needs a labelled image corpus that doesn't exist. Building that corpus is the actual work; `GameIdentifying` is the seam it plugs into. If the marketing promises "point at a card and SleeveIt knows the game", that corpus has to exist first.

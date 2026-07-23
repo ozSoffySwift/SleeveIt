@@ -1,7 +1,7 @@
 import WidgetKit
 import SwiftUI
 
-/// Timeline entry backed by the shared snapshot the app writes on each My List
+/// Timeline entry backed by the shared snapshot the app writes on each My Sleeves
 /// change.
 struct SleeveEntry: TimelineEntry {
     let date: Date
