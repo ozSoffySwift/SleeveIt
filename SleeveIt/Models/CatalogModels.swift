@@ -153,6 +153,16 @@ final class ListEntry {
     /// How many cards of the measured size that custom game holds.
     var cardCount: Int?
 
+    /// A free-text note the user keeps on this game ("base only", "need
+    /// premium sleeves", …). Empty by default.
+    var notes: String = ""
+
+    /// Sleeving progress, stored as a raw Int for SwiftData lightweight
+    /// migration: 0 = not sleeved, 1 = in progress, 2 = sleeved. New in v1.1;
+    /// pre-existing rows default to 0 and are backfilled from `isOwned` on
+    /// first load (see `SleeveStatusMigration`).
+    var sleeveStatusRaw: Int = 0
+
     init(
         id: UUID = UUID(),
         gameID: String? = nil,
@@ -163,7 +173,9 @@ final class ListEntry {
         addedAt: Date = .now,
         includedExpansionIDs: [String] = [],
         customTitle: String? = nil,
-        cardCount: Int? = nil
+        cardCount: Int? = nil,
+        notes: String = "",
+        sleeveStatus: SleeveStatus = .notSleeved
     ) {
         self.id = id
         self.gameID = gameID
@@ -175,10 +187,63 @@ final class ListEntry {
         self.includedExpansionIDs = includedExpansionIDs
         self.customTitle = customTitle
         self.cardCount = cardCount
+        self.notes = notes
+        self.sleeveStatusRaw = sleeveStatus.rawValue
     }
 
     var isMeasurement: Bool { gameID == nil && customTitle == nil }
     var isCustomGame: Bool { gameID == nil && customTitle != nil }
+
+    /// Sleeving progress. Writing it keeps the legacy `isOwned` flag in sync
+    /// (owned == fully sleeved) so the shopping-list and snapshot code that
+    /// predates the 3-state status keeps working unchanged.
+    var sleeveStatus: SleeveStatus {
+        get { SleeveStatus(rawValue: sleeveStatusRaw) ?? .notSleeved }
+        set {
+            sleeveStatusRaw = newValue.rawValue
+            isOwned = (newValue == .sleeved)
+        }
+    }
+}
+
+/// Where a game sits in the sleeving process.
+enum SleeveStatus: Int, CaseIterable, Identifiable {
+    case notSleeved = 0
+    case inProgress = 1
+    case sleeved = 2
+
+    var id: Int { rawValue }
+
+    var label: String {
+        switch self {
+        case .notSleeved: return "Not sleeved"
+        case .inProgress: return "In progress"
+        case .sleeved: return "Sleeved"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .notSleeved: return "circle"
+        case .inProgress: return "circle.lefthalf.filled"
+        case .sleeved: return "checkmark.circle.fill"
+        }
+    }
+}
+
+/// Backfills the v1.1 `sleeveStatus` from the legacy `isOwned` flag.
+///
+/// SwiftData's lightweight migration adds `sleeveStatusRaw` with a default of 0
+/// (not sleeved), which would wrongly reset games a pre-v1.1 user had already
+/// marked owned. This runs once on launch to promote those to `.sleeved`.
+enum SleeveStatusMigration {
+    static func backfill(in context: ModelContext) {
+        let descriptor = FetchDescriptor<ListEntry>(
+            predicate: #Predicate { $0.isOwned && $0.sleeveStatusRaw == 0 })
+        guard let stale = try? context.fetch(descriptor), !stale.isEmpty else { return }
+        for entry in stale { entry.sleeveStatusRaw = SleeveStatus.sleeved.rawValue }
+        try? context.save()
+    }
 }
 
 /// How many sleeves of one size the user already owns, so the shopping list
@@ -188,9 +253,14 @@ final class SleeveStock {
     @Attribute(.unique) var sizeID: String
     var ownedCount: Int
 
-    init(sizeID: String, ownedCount: Int) {
+    /// The sleeve brand/product the user buys for this size (Mayday,
+    /// Gamegenic, Sleeve Kings…), for easy re-ordering. Empty by default.
+    var brand: String = ""
+
+    init(sizeID: String, ownedCount: Int, brand: String = "") {
         self.sizeID = sizeID
         self.ownedCount = ownedCount
+        self.brand = brand
     }
 }
 

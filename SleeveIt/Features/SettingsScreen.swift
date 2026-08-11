@@ -171,6 +171,12 @@ struct SettingsScreen: View {
                 } label: {
                     Label("About SleeveIt", systemImage: "info.circle")
                 }
+
+                NavigationLink {
+                    DeveloperScreen()
+                } label: {
+                    Label("About the Developer", systemImage: "person.crop.circle")
+                }
             } footer: {
                 if let refreshMessage {
                     Text(refreshMessage)
@@ -291,7 +297,13 @@ struct AboutScreen: View {
             }
 
             Section {
-                Text("SleeveIt is free, with no ads and no tracking. Your list stays on your device.")
+                Text("SleeveIt is free, with no ads and no cross-app tracking. Your games, notes and measurements stay on your device; only anonymous usage analytics are collected to improve the app.")
+                SafariLink(
+                    title: "Privacy Policy",
+                    subtitle: "What's collected and what stays on device",
+                    systemImage: "hand.raised",
+                    url: URL(string: "https://ozsoffyswift.github.io/SleeveIt/privacy/")!
+                )
             }
         }
         .navigationTitle("About")

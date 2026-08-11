@@ -97,6 +97,7 @@ struct CalibrationScreen: View {
             ) {
                 ScaleCalibration.save(factor)
                 savedCorrectionPercent = (factor - 1) * 100
+                AppAnalytics.log(.calibrationCompleted)
             } else {
                 scanFailed = true
             }

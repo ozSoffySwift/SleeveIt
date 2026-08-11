@@ -43,9 +43,14 @@ SwiftUI · SwiftData · ARKit · Vision · WidgetKit · App Intents · iOS 17+ �
 ## Build & run
 
 1. Open `SleeveIt.xcodeproj` in Xcode 26+ and run on the simulator — no setup needed.
+   Swift Package Manager will resolve **Firebase Analytics** on first open.
 2. **For a device build**, set your own Signing Team on the `SleeveIt` and `SleeveItWidgetExtension`
    targets (the committed project ships with an empty `DEVELOPMENT_TEAM` on purpose).
-3. **Optional integrations** are off until you configure them, and the app degrades gracefully
+3. **Firebase Analytics** needs your own `SleeveIt/GoogleService-Info.plist` (git-ignored; download
+   it from your Firebase project). The analytics layer is isolated behind `AppAnalytics` in
+   [`Analytics.swift`](SleeveIt/Analytics/Analytics.swift), so the app still builds and runs if the
+   file or SDK is absent — it just logs nothing.
+4. **Optional integrations** are off until you configure them, and the app degrades gracefully
    without them:
    - **BoardGameGeek import** needs a registered API token — add `Support/BGGToken.plist` with a
      `token` string key (git-ignored; see [`BGGConfiguration`](SleeveIt/BGG/BGGConfiguration.swift)).

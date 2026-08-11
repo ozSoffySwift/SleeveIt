@@ -6,6 +6,9 @@ struct SleeveItApp: App {
     let container: ModelContainer
 
     init() {
+        // Firebase Analytics, configured before anything logs. Disclosed in the
+        // App Store listing and privacy policy.
+        AppAnalytics.configure()
         do {
             // Local-only for v1. iCloud sync of user data is planned for a
             // future version — see the README; the models are the thing that
@@ -25,8 +28,12 @@ struct SleeveItApp: App {
         WindowGroup {
             AppRoot()
                 .task {
+                    AppAnalytics.log(.appOpened)
                     let store = CatalogStore(context: container.mainContext)
                     store.seedIfNeeded()
+                    // One-time backfill: give pre-v1.1 sleeved rows their new
+                    // 3-state status (owned == fully sleeved).
+                    SleeveStatusMigration.backfill(in: container.mainContext)
                     // Non-blocking: the bundled catalog is already usable, so a
                     // slow or absent network never delays first paint.
                     await store.refresh()

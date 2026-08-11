@@ -73,7 +73,11 @@ struct MeasureScreen: View {
         .onChange(of: measurer.phase) { _, phase in
             // Count only on a successful AR lock — not on opening the camera,
             // and not on manual entry.
-            if case .locked = phase { quota.recordMeasurement() }
+            if case .locked(let m) = phase {
+                quota.recordMeasurement()
+                let sizeID = SleeveMatcher.recommended(for: m, in: sizes)?.best.id ?? "unknown"
+                AppAnalytics.log(.cardMeasured(sizeID: sizeID))
+            }
         }
         .sheet(isPresented: $isManualEntryPresented) {
             ManualEntrySheet { measurement in
@@ -261,6 +265,7 @@ struct MeasureScreen: View {
             sizeID: size.id
         ))
         try? context.save()
+        AppAnalytics.log(.sleeveAdded(sizeID: size.id))
         dismiss()
     }
 
@@ -275,6 +280,7 @@ struct MeasureScreen: View {
             context.insert(ListEntry(gameID: game.id, sizeID: sizeID))
             try? context.save()
         }
+        AppAnalytics.log(.gameAdded(source: "catalog"))
         dismiss()
     }
 
@@ -291,6 +297,7 @@ struct MeasureScreen: View {
             cardCount: max(1, count)
         ))
         try? context.save()
+        AppAnalytics.log(.gameAdded(source: "custom"))
         dismiss()
     }
 }
@@ -847,14 +854,16 @@ private struct ResultSheet: View {
 
     @State private var isPickingGame = false
 
+    /// The recommended sleeve, biased 2mm larger than the card so it fits with
+    /// a little room rather than a hair too tight.
     private var match: SleeveSize? {
-        SleeveMatcher.nearest(to: measurement, in: sizes)
+        SleeveMatcher.recommended(for: measurement, in: sizes)?.best
     }
 
     /// The runner-up size when the measurement's own uncertainty can't
     /// separate it from the winner — surfaced rather than silently guessed.
     private var closeAlternative: SleeveSize? {
-        SleeveMatcher.matchWithAlternative(to: measurement, in: sizes)?.alternative
+        SleeveMatcher.recommended(for: measurement, in: sizes)?.alternative
     }
 
     private var candidates: [GameCandidate] {
@@ -995,7 +1004,8 @@ private struct ResultSheet: View {
                 }
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.warning)
-            } else if !SleeveMatcher.isConfident(measurement, size) {
+            } else if !SleeveMatcher.isConfident(
+                SleeveMatcher.withRecommendationMargin(measurement), size) {
                 Label(
                     "This is the closest standard size, but it's not an exact match. Check the fit before buying.",
                     systemImage: "exclamationmark.triangle.fill"

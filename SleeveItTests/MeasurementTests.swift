@@ -399,6 +399,36 @@ final class MeasurementTests: XCTestCase {
         XCTAssertNotNil(match.alternative, "ambiguity must be surfaced, not guessed away")
     }
 
+    // MARK: - Recommendation margin (+2mm)
+
+    func testRecommendationMarginEnlargesBothEdges() {
+        let card = CardMeasurement(widthMM: 61.0, heightMM: 86.0, confidence: 1)
+        let padded = SleeveMatcher.withRecommendationMargin(card)
+        XCTAssertEqual(padded.widthMM, 63.0, accuracy: 1e-9)
+        XCTAssertEqual(padded.heightMM, 88.0, accuracy: 1e-9)
+    }
+
+    func testCommonPokerCardStillRecommendsStandard() throws {
+        // 63.5×88 + 2mm = 65.5×90; standards are spaced far enough apart that
+        // the poker card still lands on Standard, not a neighbour.
+        let card = CardMeasurement(widthMM: 63.5, heightMM: 88, confidence: 1)
+        let result = try XCTUnwrap(SleeveMatcher.recommended(for: card, in: makeSizes()))
+        XCTAssertEqual(result.best.id, "standard")
+    }
+
+    func testMarginLeansToTheRoomierSleeveOnACloseCall() throws {
+        // A card measured right at Standard American (57.5×89): +2mm pushes the
+        // target to 59.5×91, so the roomier Catan (59×92) is now the pick —
+        // the intended "give the card a little headroom" behaviour.
+        let sizes = [
+            makeSize(id: "standard-american", w: 57.5, h: 89),
+            makeSize(id: "catan", w: 59, h: 92),
+        ]
+        let card = CardMeasurement(widthMM: 57.5, heightMM: 89, confidence: 1)
+        let result = try XCTUnwrap(SleeveMatcher.recommended(for: card, in: sizes))
+        XCTAssertEqual(result.best.id, "catan")
+    }
+
     // MARK: - Units
 
     func testMillimetreFormattingTrimsWholeNumbersOnly() {
@@ -417,6 +447,12 @@ final class MeasurementTests: XCTestCase {
 
     private func sample(_ width: Double, _ height: Double) -> CardMeasurement {
         CardMeasurement(widthMM: width, heightMM: height, confidence: 1)
+    }
+
+    private func makeSize(id: String, w: Double, h: Double) -> SleeveSize {
+        SleeveSize(
+            id: id, name: id, widthMM: w, heightMM: h,
+            tagline: "", blurb: "", examples: [], isCommon: false, sortIndex: 0)
     }
 
     private func makeSizes() throws -> [SleeveSize] {

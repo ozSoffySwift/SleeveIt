@@ -111,6 +111,35 @@ enum SleeveMatcher {
         return (best, separation <= resolvable ? ranked[1] : nil)
     }
 
+    /// Headroom, in mm per edge, added to the measured card before choosing a
+    /// sleeve. A sleeve must be at least as large as the card to slide on, so
+    /// the recommendation is biased slightly larger than the raw measurement.
+    static let recommendationMarginMM = 2.0
+
+    /// The recommended sleeve for a measured card, and a close runner-up when
+    /// the choice is genuinely ambiguous.
+    ///
+    /// The card is treated as `recommendationMarginMM` larger on each edge
+    /// before matching, so the suggestion leans toward a sleeve with a little
+    /// room rather than one that's a hair too tight. Because the standards are
+    /// spaced well more than 2mm apart, the common cases are unaffected; only
+    /// borderline cards nudge up to the next size.
+    static func recommended(
+        for measurement: CardMeasurement, in sizes: [SleeveSize]
+    ) -> (best: SleeveSize, alternative: SleeveSize?)? {
+        matchWithAlternative(to: withRecommendationMargin(measurement), in: sizes)
+    }
+
+    /// The measured card enlarged by the recommendation margin on both edges.
+    static func withRecommendationMargin(_ measurement: CardMeasurement) -> CardMeasurement {
+        let m = measurement.normalized
+        return CardMeasurement(
+            widthMM: m.widthMM + recommendationMarginMM,
+            heightMM: m.heightMM + recommendationMarginMM,
+            confidence: m.confidence,
+            spreadMM: m.spreadMM)
+    }
+
     static func distance(_ measurement: CardMeasurement, _ size: SleeveSize) -> Double {
         let dw = size.widthMM - measurement.widthMM
         let dh = size.heightMM - measurement.heightMM

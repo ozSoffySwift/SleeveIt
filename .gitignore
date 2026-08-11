@@ -28,3 +28,6 @@ Support/BGGToken.plist
 *.p12
 *.mobileprovision
 secrets.xcconfig
+
+# Firebase config (contains project API key — keep out of the public repo)
+GoogleService-Info.plist
