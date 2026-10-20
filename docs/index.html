@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SleeveIt — Measure a card, get the right sleeve</title>
+<meta name="description" content="SleeveIt measures any board game card in real millimetres and tells you exactly which sleeves to buy — and how many. A catalog of 8,800+ games, one consolidated shopping list. Free for iPhone.">
+<link rel="canonical" href="https://ozsoffyswift.github.io/SleeveIt/">
+<meta name="apple-itunes-app" content="app-id=6793905893">
+<meta name="theme-color" content="#f6f7f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0e0c" media="(prefers-color-scheme: dark)">
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SleeveIt">
+<meta property="og:title" content="SleeveIt — Measure a card, get the right sleeve">
+<meta property="og:description" content="Measure any board game card in real millimetres and get the exact sleeves to buy — and how many. 8,800+ games, one shopping list. Free for iPhone.">
+<meta property="og:url" content="https://ozsoffyswift.github.io/SleeveIt/">
+<meta property="og:image" content="https://ozsoffyswift.github.io/SleeveIt/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SleeveIt — measure a card, get the right sleeve.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SleeveIt — Measure a card, get the right sleeve">
+<meta name="twitter:description" content="Measure any board game card in real millimetres and get the exact sleeves to buy — and how many. Free for iPhone.">
+<meta name="twitter:image" content="https://ozsoffyswift.github.io/SleeveIt/assets/og.png">
+
+<link rel="icon" href="assets/icon-64.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap">
+
+<style>
+  :root {
+    --font-head: "Fredoka", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-body: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+    /* Brand — taken from the app's Theme.swift (forest green #1C6432). */
+    --brand: #1c6432;
+    --brand-deep: #104a23;
+    --brand-bright: #3dc76a;
+    --mint: #1f8a52;          /* "sleeved"/success, darkened for text on white */
+    --cta: #1c6432;
+    --cta-hover: #16542a;
+
+    /* Surfaces & text (light). */
+    --bg: #f6f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef1ed;
+    --text: #15180f;
+    --text-muted: #52584e;
+    --border: rgba(20, 40, 24, 0.10);
+    --border-strong: rgba(20, 40, 24, 0.16);
+    --shadow-sm: 0 1px 2px rgba(16, 40, 24, 0.06), 0 2px 8px rgba(16, 40, 24, 0.05);
+    --shadow-md: 0 10px 30px rgba(16, 50, 28, 0.10), 0 2px 8px rgba(16, 40, 24, 0.06);
+    --shadow-lg: 0 24px 60px rgba(12, 48, 26, 0.16), 0 6px 16px rgba(16, 40, 24, 0.08);
+
+    /* Badge (Download on the App Store). */
+    --badge-bg: #000000;
+    --badge-fg: #ffffff;
+    --badge-border: transparent;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+    --radius-card: 20px;
+    --radius-control: 14px;
+    --maxw: 1120px;
+    --gutter: 20px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --brand: #3dc76a;
+      --brand-deep: #0d3b1d;
+      --brand-bright: #52e07f;
+      --mint: #4fd68a;
+      --cta: #1c6432;
+      --cta-hover: #21753a;
+
+      --bg: #0c0e0c;
+      --surface: #16191600;
+      --surface: #161a16;
+      --surface-2: #1f241f;
+      --text: #ecefea;
+      --text-muted: #a3ac9f;
+      --border: rgba(255, 255, 255, 0.10);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+      --shadow-md: 0 12px 34px rgba(0, 0, 0, 0.55);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+      --badge-bg: #ffffff;
+      --badge-fg: #000000;
+      --badge-border: transparent;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3 { font-family: var(--font-head); font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; margin: 0; }
+
+  a { color: var(--brand); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  img { max-width: 100%; display: block; }
+
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
+
+  :focus-visible { outline: 3px solid var(--brand-bright); outline-offset: 3px; border-radius: 6px; }
+
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 200;
+    background: var(--surface); color: var(--text);
+    padding: 12px 18px; border-radius: 0 0 12px 0; box-shadow: var(--shadow-md);
+  }
+  .skip:focus { left: 0; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 0 22px; border-radius: var(--radius-control);
+    font-family: var(--font-head); font-weight: 600; font-size: 1.02rem;
+    border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+    transition: transform 160ms var(--ease-out), background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary { background: var(--cta); color: #fff; box-shadow: var(--shadow-sm); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover { background: var(--cta-hover); box-shadow: var(--shadow-md); }
+  }
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-ghost:hover { background: var(--surface-2); }
+  }
+
+  /* App Store badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 11px;
+    min-height: 54px; padding: 0 20px; border-radius: 13px;
+    background: var(--badge-bg); color: var(--badge-fg);
+    border: 1px solid var(--badge-border);
+    transition: transform 160ms var(--ease-out), box-shadow 200ms ease, filter 200ms ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .badge:hover { text-decoration: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .badge:hover { filter: brightness(1.08); box-shadow: var(--shadow-md); }
+  }
+  @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+    .badge:hover { filter: brightness(0.9); }
+  }
+  .badge:active { transform: scale(0.97); }
+  .badge svg { flex: 0 0 auto; }
+  .badge .badge-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; text-align: left; }
+  .badge .badge-small { font-family: var(--font-body); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.02em; opacity: 0.92; }
+  .badge .badge-big { font-family: var(--font-head); font-size: 1.22rem; font-weight: 600; margin-top: 3px; }
+
+  /* ---------- Header ---------- */
+  .site-header {
+    position: sticky; top: 0; z-index: 100;
+    background: transparent;
+    transition: background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease, backdrop-filter 250ms ease;
+    border-bottom: 1px solid transparent;
+  }
+  .site-header.scrolled {
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+    border-bottom-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .brand-lockup { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-family: var(--font-head); font-weight: 600; font-size: 1.2rem; }
+  .brand-lockup:hover { text-decoration: none; }
+  .brand-lockup img { width: 32px; height: 32px; border-radius: 8px; box-shadow: var(--shadow-sm); }
+  .header-cta { min-height: 44px; padding: 0 18px; font-size: 0.95rem; }
+  .header-cta .cta-short { display: none; }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; padding: 46px 0 20px; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -20% -10% auto -10%; height: 640px; z-index: -1;
+    background:
+      radial-gradient(60% 70% at 18% 8%, color-mix(in srgb, var(--brand-bright) 26%, transparent), transparent 70%),
+      radial-gradient(55% 60% at 92% 0%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 68%);
+    filter: saturate(115%);
+  }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 40px; align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-head); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+    border: 1px solid var(--border); padding: 7px 14px; border-radius: 999px; margin-bottom: 18px;
+  }
+  .hero h1 { font-size: clamp(2.2rem, 6vw, 3.5rem); font-weight: 700; letter-spacing: -0.02em; }
+  .hero h1 .accent { color: var(--brand); }
+  .hero-sub { font-size: clamp(1.05rem, 2.4vw, 1.3rem); color: var(--text-muted); margin: 18px 0 28px; max-width: 34ch; }
+  .hero-ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  .hero-meta { margin-top: 18px; color: var(--text-muted); font-size: 0.92rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .hero-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+
+  /* Hero phones */
+  .hero-phones { position: relative; display: flex; justify-content: center; align-items: flex-end; min-height: 380px; }
+  .phone { border-radius: 30px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); background: var(--surface); }
+  .phone.back { position: absolute; width: 50%; transform: translateX(46%) translateY(-6%) rotate(5deg); z-index: 1; opacity: 0.96; }
+  .phone.front { position: relative; width: 56%; z-index: 2; transform: translateX(-16%) rotate(-3deg); }
+
+  /* ---------- Sections ---------- */
+  section { padding: 56px 0; }
+  .section-head { max-width: 640px; margin-bottom: 36px; }
+  .section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+  .section-head h2 { font-size: clamp(1.7rem, 4vw, 2.5rem); font-weight: 700; }
+  .section-head p { color: var(--text-muted); font-size: 1.1rem; margin: 12px 0 0; }
+  .kicker { font-family: var(--font-head); font-weight: 600; color: var(--brand); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.8rem; margin-bottom: 10px; }
+
+  /* Problem band */
+  .problem { padding: 40px 0; }
+  .problem .wrap { max-width: 860px; text-align: center; }
+  .problem p { font-size: clamp(1.25rem, 3.2vw, 1.8rem); font-family: var(--font-head); font-weight: 500; line-height: 1.35; letter-spacing: -0.01em; }
+  .problem .hl { color: var(--brand); }
+
+  /* ---------- Features bento ---------- */
+  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card);
+    padding: 26px; box-shadow: var(--shadow-sm);
+    transition: transform 240ms var(--ease-out), box-shadow 240ms var(--ease-out), border-color 240ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tile:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+  }
+  .tile h3 { font-size: 1.22rem; font-weight: 600; margin-bottom: 8px; }
+  .tile p { color: var(--text-muted); margin: 0; font-size: 1rem; }
+  .tile .ic {
+    width: 48px; height: 48px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 16px;
+    color: var(--brand); background: color-mix(in srgb, var(--brand) 13%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent);
+  }
+  .tile .ic svg { width: 26px; height: 26px; }
+
+  .tile-span-3 { grid-column: span 3; }
+  .tile-span-2 { grid-column: span 2; }
+  .tile-hero {
+    grid-column: span 3; grid-row: span 2; color: #fff; border: none;
+    background: linear-gradient(160deg, var(--brand-bright) 0%, var(--brand) 42%, var(--brand-deep) 100%);
+    display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-height: 260px;
+  }
+  .tile-hero h3 { font-size: 1.6rem; }
+  .tile-hero p { color: rgba(255, 255, 255, 0.92); font-size: 1.06rem; }
+  .tile-hero .ic { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255,255,255,0.28); width: 54px; height: 54px; }
+  .tile-hero .ic svg { width: 30px; height: 30px; }
+
+  /* ---------- How it works ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; counter-reset: step; }
+  .step { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 28px 26px 26px; box-shadow: var(--shadow-sm); }
+  .step .num {
+    counter-increment: step; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; color: #fff; background: var(--brand); margin-bottom: 16px;
+  }
+  .step .num::before { content: counter(step); }
+  .step h3 { font-size: 1.2rem; margin-bottom: 8px; }
+  .step p { color: var(--text-muted); margin: 0; }
+
+  /* ---------- Screenshots carousel ---------- */
+  .carousel { position: relative; }
+  .car-track {
+    display: flex; gap: 22px; overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 8px 2px 22px; margin: 0 calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter);
+    scroll-padding-left: var(--gutter); -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .car-track::-webkit-scrollbar { display: none; }
+  .car-slide { scroll-snap-align: start; flex: 0 0 auto; width: 260px; text-align: center; }
+  .car-slide figure { margin: 0; }
+  .car-slide img { width: 260px; height: 563px; border-radius: 26px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); background: var(--surface); }
+  .car-slide figcaption { margin-top: 16px; color: var(--text-muted); font-weight: 600; font-size: 0.98rem; }
+  .car-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 6px; }
+  .car-btn {
+    width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); cursor: pointer; box-shadow: var(--shadow-sm);
+    transition: transform 160ms var(--ease-out), background-color 200ms ease, box-shadow 200ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) { .car-btn:hover { background: var(--surface-2); box-shadow: var(--shadow-md); } }
+  .car-btn:active { transform: scale(0.94); }
+  .car-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .car-btn svg { width: 22px; height: 22px; }
+  .car-dots { display: flex; gap: 9px; align-items: center; }
+  .car-dot { width: 9px; height: 9px; border-radius: 50%; border: none; padding: 0; background: var(--border-strong); cursor: pointer; transition: background-color 200ms ease, transform 200ms var(--ease-out); }
+  .car-dot[aria-current="true"] { background: var(--brand); transform: scale(1.25); }
+
+  /* ---------- Specs ---------- */
+  .about-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+  .specs { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .specs th, .specs td { text-align: left; padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 1rem; }
+  .specs tr:last-child th, .specs tr:last-child td { border-bottom: none; }
+  .specs th { color: var(--text-muted); font-weight: 600; width: 44%; }
+  .specs td { font-weight: 700; }
+
+  /* ---------- Developer ---------- */
+  .dev { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 34px; box-shadow: var(--shadow-sm); display: flex; gap: 26px; align-items: center; flex-wrap: wrap; }
+  .dev img { width: 88px; height: 88px; border-radius: 20px; box-shadow: var(--shadow-sm); }
+  .dev-body { flex: 1 1 320px; }
+  .dev-body h3 { font-size: 1.4rem; margin-bottom: 6px; }
+  .dev-body p { color: var(--text-muted); margin: 0 0 16px; }
+  .dev-links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text); font-weight: 600; font-size: 0.95rem; background: var(--surface); transition: transform 160ms var(--ease-out), background-color 200ms ease; }
+  @media (hover: hover) and (pointer: fine) { .chip:hover { background: var(--surface-2); text-decoration: none; } }
+  .chip:active { transform: scale(0.97); }
+  .chip svg { width: 18px; height: 18px; }
+
+  /* ---------- Privacy ---------- */
+  .privacy-card { background: linear-gradient(160deg, color-mix(in srgb, var(--brand) 8%, var(--surface)), var(--surface)); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 34px; box-shadow: var(--shadow-sm); display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+  .privacy-card .ic { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; color: var(--brand); background: color-mix(in srgb, var(--brand) 13%, var(--surface)); border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent); }
+  .privacy-card .ic svg { width: 28px; height: 28px; }
+  .privacy-body { flex: 1 1 300px; }
+  .privacy-body h2 { font-size: 1.5rem; margin-bottom: 10px; }
+  .privacy-body p { color: var(--text-muted); margin: 0 0 14px; }
+
+  /* ---------- Final CTA ---------- */
+  .final { text-align: center; }
+  .final-inner { background: linear-gradient(165deg, var(--brand-bright) 0%, var(--brand) 45%, var(--brand-deep) 100%); border-radius: 28px; padding: 56px 28px; color: #fff; box-shadow: var(--shadow-md); }
+  .final-inner h2 { font-size: clamp(1.8rem, 5vw, 2.7rem); font-weight: 700; color: #fff; }
+  .final-inner p { color: rgba(255,255,255,0.92); font-size: 1.15rem; margin: 14px auto 28px; max-width: 46ch; }
+  .final-inner .badge { --badge-bg: #fff; --badge-fg: #0c0e0c; }
+
+  /* ---------- Footer ---------- */
+  footer { padding: 40px 0 56px; border-top: 1px solid var(--border); color: var(--text-muted); }
+  .foot-grid { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; justify-content: space-between; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  .foot-links a { color: var(--text-muted); font-weight: 600; }
+  .foot-links a:hover { color: var(--brand); }
+  .foot-note { font-size: 0.86rem; margin-top: 18px; max-width: 70ch; }
+
+  /* ---------- Reveal (JS + motion only) ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.65s var(--ease-out), transform 0.65s var(--ease-out); }
+    html.js .reveal.is-visible { opacity: 1; transform: none; }
+  }
+
+  /* Reduced motion: keep color/opacity feedback, drop positional motion. */
+  @media (prefers-reduced-motion: reduce) {
+    .tile:hover { transform: none; }
+    .btn:active, .badge:active, .chip:active, .car-btn:active, .car-dot,
+    .brand-lockup:active, .back:active { transform: none; }
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 920px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 18px; }
+    .hero-sub { max-width: none; }
+    .hero-phones { min-height: 440px; margin-top: 8px; }
+    .bento { grid-template-columns: repeat(2, 1fr); }
+    .tile-hero, .tile-span-3, .tile-span-2 { grid-column: span 2; grid-row: auto; min-height: 0; }
+    .steps { grid-template-columns: 1fr; }
+    .about-grid { grid-template-columns: 1fr; gap: 24px; }
+  }
+  @media (max-width: 560px) {
+    section { padding: 44px 0; }
+    .hero { padding-top: 30px; }
+    .bento { grid-template-columns: 1fr; }
+    .tile-hero, .tile-span-3, .tile-span-2 { grid-column: span 1; }
+    .hero-ctas { gap: 12px; }
+    .hero-ctas .btn, .hero-ctas .badge { width: 100%; }
+    .car-slide, .car-slide img { width: 230px; }
+    .car-slide img { height: 498px; }
+    .header-cta .cta-long { display: none; }
+    .header-cta .cta-short { display: inline; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+  <div class="wrap header-inner">
+    <a class="brand-lockup" href="#top" aria-label="SleeveIt home">
+      <img src="assets/icon-64.png" width="32" height="32" alt="">
+      <span>SleeveIt</span>
+    </a>
+    <a class="btn btn-primary header-cta" href="https://apps.apple.com/app/id6793905893">
+      <span class="cta-long">Get the app</span><span class="cta-short">Get app</span>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">Sleeve it, don't leave it</span>
+        <h1 id="hero-title">Measure a card, get the <span class="accent">right sleeve</span>.</h1>
+        <p class="hero-sub">SleeveIt measures any board game card in real millimetres and tells you exactly which sleeves to buy — and how many.</p>
+        <div class="hero-ctas">
+          <a class="badge" href="https://apps.apple.com/app/id6793905893" aria-label="Download SleeveIt on the App Store">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.22-1.14 3.03-.83.97-2.2 1.72-3.32 1.63-.14-1.1.44-2.26 1.1-3 .76-.86 2.1-1.5 3.36-1.66zM20.6 17.09c-.56 1.3-.83 1.88-1.56 3.03-1.02 1.6-2.46 3.6-4.24 3.61-1.58.02-1.99-1.03-4.14-1.02-2.14.01-2.59 1.04-4.18 1.03-1.78-.02-3.14-1.82-4.16-3.42-2.86-4.5-3.16-9.78-1.4-12.59 1.26-2 3.24-3.17 5.1-3.17 1.9 0 3.1 1.04 4.67 1.04 1.52 0 2.45-1.04 4.65-1.04 1.66 0 3.42.9 4.68 2.46-4.11 2.25-3.44 8.12.32 10.05z"/></svg>
+            <span class="badge-text"><span class="badge-small">Download on the</span><span class="badge-big">App Store</span></span>
+          </a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
+        </div>
+        <p class="hero-meta"><span>Free</span><span class="dot"></span><span>iPhone</span><span class="dot"></span><span>iOS 17+</span><span class="dot"></span><span>No ads</span></p>
+      </div>
+      <div class="hero-phones" aria-hidden="true">
+        <img class="phone back" src="assets/shots/MySleeves.png" width="660" height="1428" alt="">
+        <img class="phone front" src="assets/shots/Measure.png" width="660" height="1428" alt="">
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section class="problem" aria-label="Why SleeveIt">
+    <div class="wrap">
+      <p>Card sizes differ by just a few millimetres. Buy the wrong sleeve and it's too tight or too loose. <span class="hl">SleeveIt takes out the guesswork</span> — measure once, buy exactly what fits.</p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">Features</p>
+        <h2 id="features-title">Everything you need to sleeve a collection</h2>
+      </div>
+      <div class="bento">
+        <article class="tile tile-hero reveal">
+          <div>
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg></div>
+          </div>
+          <div>
+            <h3>Measure any card with your camera</h3>
+            <p>ARKit projects the card's corners onto the table for a true-millimetre size, then recommends the matching sleeve. A one-time calibration with any bank card tunes it to your exact device. No AR? A reference-photo mode has you covered.</p>
+          </div>
+        </article>
+
+        <article class="tile tile-span-3 reveal">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <h3>A catalog of 8,800+ games</h3>
+          <p>Search almost any board game and see every deck it contains — card counts and exact sizes, expansions included. Card size data licensed from SleeveYourGames.com.</p>
+        </article>
+
+        <article class="tile tile-span-3 reveal">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></div>
+          <h3>One consolidated shopping list</h3>
+          <p>My Sleeves rolls everything into a single list — "buy 975 Mini European, 727 Card Game, 298 Standard American." Tell it how many you already own and it shows only what's left to buy.</p>
+        </article>
+
+        <article class="tile tile-span-2 reveal">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <h3>Track what's sleeved</h3>
+          <p>Mark each game sleeved, in progress, or not started, note the brand you use per size, and watch the progress bar fill.</p>
+        </article>
+
+        <article class="tile tile-span-2 reveal">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7 8.7 21.3a2.4 2.4 0 0 1-3.4 0l-2.6-2.6a2.4 2.4 0 0 1 0-3.4L15.3 2.7a2.4 2.4 0 0 1 3.4 0l2.6 2.6a2.4 2.4 0 0 1 0 3.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/></svg></div>
+          <h3>Reference chart</h3>
+          <p>Every sleeve standard, drawn to scale, with the games that use each one.</p>
+        </article>
+
+        <article class="tile tile-span-2 reveal">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/></svg></div>
+          <h3>Widget &amp; Siri</h3>
+          <p>A home-screen widget shows sleeves to buy at a glance, and Siri answers "How many sleeves do I need?"</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <p class="kicker">How it works</p>
+        <h2 id="how-title">From a loose card to a shopping list in three steps</h2>
+      </div>
+      <div class="steps">
+        <article class="step reveal">
+          <div class="num" aria-hidden="true"></div>
+          <h3>Measure or search</h3>
+          <p>Scan a card with your camera for a real-millimetre size, or look the game up in the catalog.</p>
+        </article>
+        <article class="step reveal">
+          <div class="num" aria-hidden="true"></div>
+          <h3>Get the exact sleeve</h3>
+          <p>SleeveIt matches it to the right standard — expansions and all — and tells you the count for each deck.</p>
+        </article>
+        <article class="step reveal">
+          <div class="num" aria-hidden="true"></div>
+          <h3>Build your list</h3>
+          <p>My Sleeves combines every game into one shopping list you can track, share as text or PDF, and check off.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section id="screenshots" aria-labelledby="shots-title">
+    <div class="wrap">
+      <div class="section-head center">
+        <p class="kicker">A look inside</p>
+        <h2 id="shots-title">Designed to feel right at home on iPhone</h2>
+      </div>
+    </div>
+    <div class="carousel">
+      <div class="wrap">
+        <div class="car-track" id="carTrack" tabindex="0" role="group" aria-label="App screenshots, scrollable">
+          <div class="car-slide"><figure><img src="assets/shots/Measure.png" width="660" height="1428" loading="lazy" alt="SleeveIt's Measure screen: a large green &quot;Measure a Card&quot; tile above a search field and recent lookups."><figcaption>Measure a card with your camera</figcaption></figure></div>
+          <div class="car-slide"><figure><img src="assets/shots/MySleeves.png" width="660" height="1428" loading="lazy" alt="The My Sleeves screen showing a &quot;1 of 3 sleeved&quot; progress bar, a list of games, and a consolidated shopping list with per-size quantities."><figcaption>One consolidated shopping list</figcaption></figure></div>
+          <div class="car-slide"><figure><img src="assets/shots/GameDetail.png" width="660" height="1428" loading="lazy" alt="The Wingspan game detail screen listing its card decks with sizes, expansion toggles, and a total sleeve count."><figcaption>Every deck, expansions included</figcaption></figure></div>
+          <div class="car-slide"><figure><img src="assets/shots/Reference.png" width="660" height="1428" loading="lazy" alt="The Reference screen listing sleeve standards such as Mini American and Standard, each drawn to scale with example games."><figcaption>Every sleeve size, drawn to scale</figcaption></figure></div>
+          <div class="car-slide"><figure><img src="assets/shots/Settings.png" width="660" height="1428" loading="lazy" alt="The Settings screen with a SleeveIt Pro card, an appearance selector, and units and catalog options."><figcaption>Your appearance, units &amp; catalog</figcaption></figure></div>
+        </div>
+      </div>
+      <div class="car-controls">
+        <button class="car-btn" id="carPrev" type="button" aria-label="Previous screenshot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <div class="car-dots" id="carDots" role="tablist" aria-label="Choose screenshot"></div>
+        <button class="car-btn" id="carNext" type="button" aria-label="Next screenshot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT / SPECS -->
+  <section id="about" aria-labelledby="about-title">
+    <div class="wrap about-grid">
+      <div>
+        <p class="kicker">About the app</p>
+        <h2 id="about-title" style="font-size: clamp(1.7rem, 4vw, 2.5rem); font-weight: 700;">Small, fast, and fully offline</h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 12px;">SleeveIt is a native SwiftUI app built with ARKit, Vision, and WidgetKit. The whole catalog ships in the app, so it works on a plane or at the table — and updates itself automatically when you're online. No account, nothing to set up.</p>
+      </div>
+      <table class="specs">
+        <tbody>
+          <tr><th scope="row">Price</th><td>Free</td></tr>
+          <tr><th scope="row">Platform</th><td>iPhone</td></tr>
+          <tr><th scope="row">Requires</th><td>iOS 17 or later</td></tr>
+          <tr><th scope="row">Category</th><td>Utilities</td></tr>
+          <tr><th scope="row">Size</th><td>About 7.7 MB</td></tr>
+          <tr><th scope="row">Latest version</th><td>1.1</td></tr>
+          <tr><th scope="row">Catalog</th><td>8,800+ games</td></tr>
+          <tr><th scope="row">Works offline</th><td>Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DEVELOPER -->
+  <section id="developer" aria-labelledby="dev-title">
+    <div class="wrap">
+      <div class="section-head"><p class="kicker">Who made it</p><h2 id="dev-title">The developer</h2></div>
+      <div class="dev">
+        <img src="assets/icon-180.png" width="88" height="88" alt="SleeveIt app icon">
+        <div class="dev-body">
+          <h3>Oz Soffy</h3>
+          <p>Independent iOS developer. SleeveIt was built end to end in SwiftUI — from the ARKit measurement engine to the home-screen widget — for anyone who's ever bought the wrong sleeves.</p>
+          <div class="dev-links">
+            <a class="chip" href="https://apps.apple.com/us/developer/oz-soffy/id790394995">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.22-1.14 3.03-.83.97-2.2 1.72-3.32 1.63-.14-1.1.44-2.26 1.1-3 .76-.86 2.1-1.5 3.36-1.66zM20.6 17.09c-.56 1.3-.83 1.88-1.56 3.03-1.02 1.6-2.46 3.6-4.24 3.61-1.58.02-1.99-1.03-4.14-1.02-2.14.01-2.59 1.04-4.18 1.03-1.78-.02-3.14-1.82-4.16-3.42-2.86-4.5-3.16-9.78-1.4-12.59 1.26-2 3.24-3.17 5.1-3.17 1.9 0 3.1 1.04 4.67 1.04 1.52 0 2.45-1.04 4.65-1.04 1.66 0 3.42.9 4.68 2.46-4.11 2.25-3.44 8.12.32 10.05z"/></svg>
+              App Store
+            </a>
+            <a class="chip" href="https://github.com/ozSoffySwift">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.2-3.2 0-.3-.5-1.5.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 5.3 18 5.6 18 5.6c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
+              GitHub
+            </a>
+            <a class="chip" href="https://www.linkedin.com/in/ozsoffy/">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.75v20.5C0 23.2.8 24 1.77 24h20.45c.98 0 1.78-.8 1.78-1.75V1.75C24 .78 23.2 0 22.22 0z"/></svg>
+              LinkedIn
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section id="privacy" aria-labelledby="privacy-title">
+    <div class="wrap">
+      <div class="privacy-card">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <div class="privacy-body">
+          <h2 id="privacy-title">Your collection stays on your iPhone</h2>
+          <p>No accounts, no ads. Your games, notes, measurements, and any card photos never leave your device. SleeveIt uses only anonymous, aggregate analytics to understand how the app is used — never your content, never linked to you.</p>
+          <a class="btn btn-ghost" href="privacy.html">Read the privacy policy</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final" aria-labelledby="final-title">
+    <div class="wrap">
+      <div class="final-inner">
+        <h2 id="final-title">Sleeve it, don't leave it.</h2>
+        <p>Measure a card, get the right sleeve, and buy exactly what you need. Free on the App Store.</p>
+        <a class="badge" href="https://apps.apple.com/app/id6793905893" aria-label="Download SleeveIt on the App Store">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.22-1.14 3.03-.83.97-2.2 1.72-3.32 1.63-.14-1.1.44-2.26 1.1-3 .76-.86 2.1-1.5 3.36-1.66zM20.6 17.09c-.56 1.3-.83 1.88-1.56 3.03-1.02 1.6-2.46 3.6-4.24 3.61-1.58.02-1.99-1.03-4.14-1.02-2.14.01-2.59 1.04-4.18 1.03-1.78-.02-3.14-1.82-4.16-3.42-2.86-4.5-3.16-9.78-1.4-12.59 1.26-2 3.24-3.17 5.1-3.17 1.9 0 3.1 1.04 4.67 1.04 1.52 0 2.45-1.04 4.65-1.04 1.66 0 3.42.9 4.68 2.46-4.11 2.25-3.44 8.12.32 10.05z"/></svg>
+          <span class="badge-text"><span class="badge-small">Download on the</span><span class="badge-big">App Store</span></span>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <a class="brand-lockup" href="#top" aria-label="SleeveIt home">
+        <img src="assets/icon-64.png" width="32" height="32" alt="">
+        <span>SleeveIt</span>
+      </a>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="https://apps.apple.com/app/id6793905893">App Store</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://github.com/ozSoffySwift/SleeveIt">Source</a>
+        <a href="https://www.linkedin.com/in/ozsoffy/">LinkedIn</a>
+      </nav>
+    </div>
+    <p class="foot-note">© <span id="year">2026</span> Oz Soffy. SleeveIt is not affiliated with BoardGameGeek or SleeveYourGames.com. Card size data licensed from SleeveYourGames.com, used with permission. Apple, the Apple logo, and App Store are trademarks of Apple Inc.</p>
+  </div>
+</footer>
+
+<script>
+  // Mark JS present so reveal styles only apply when JS can un-hide them.
+  document.documentElement.classList.add('js');
+
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Sticky header state
+    var header = document.querySelector('.site-header');
+    var onScroll = function () {
+      if (window.scrollY > 8) header.classList.add('scrolled');
+      else header.classList.remove('scrolled');
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Scroll reveals (only when motion is allowed)
+    if (!reduce.matches && 'IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); }
+        });
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach(function (el, i) {
+        el.style.transitionDelay = (Math.min(i % 3, 3) * 60) + 'ms';
+        io.observe(el);
+      });
+    }
+
+    // Screenshot carousel — index based (never relative scrollBy)
+    var track = document.getElementById('carTrack');
+    var slides = track ? Array.prototype.slice.call(track.querySelectorAll('.car-slide')) : [];
+    var prev = document.getElementById('carPrev');
+    var next = document.getElementById('carNext');
+    var dotsWrap = document.getElementById('carDots');
+    var index = 0;
+
+    function maxScroll() { return track.scrollWidth - track.clientWidth; }
+    function targetFor(i) {
+      // left-align slide i to the track origin, clamped to the scrollable range
+      var base = slides[i].offsetLeft - slides[0].offsetLeft;
+      return Math.max(0, Math.min(base, maxScroll()));
+    }
+    function go(i, smooth) {
+      index = Math.max(0, Math.min(slides.length - 1, i));
+      var target = targetFor(index);
+      track.scrollTo({ left: target, behavior: (smooth && !reduce.matches) ? 'smooth' : 'auto' });
+      update(target);
+    }
+    function nearestIndex() {
+      var pos = track.scrollLeft, origin = slides[0].offsetLeft;
+      var best = 0, bestD = Infinity;
+      slides.forEach(function (s, i) {
+        var d = Math.abs((s.offsetLeft - origin) - pos);
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      return best;
+    }
+    function update(pos) {
+      if (pos == null) pos = track.scrollLeft;
+      var max = maxScroll();
+      // disable from actual scroll geometry so arrows are right even when the
+      // last slides share the clamped end position on wide screens
+      if (prev) prev.disabled = pos <= 1;
+      if (next) next.disabled = pos >= max - 1;
+      if (dotsWrap) Array.prototype.forEach.call(dotsWrap.children, function (d, i) {
+        d.setAttribute('aria-current', i === index ? 'true' : 'false');
+      });
+    }
+
+    if (track && slides.length) {
+      // build dots
+      slides.forEach(function (s, i) {
+        var b = document.createElement('button');
+        b.className = 'car-dot';
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-label', 'Go to screenshot ' + (i + 1));
+        b.addEventListener('click', function () { go(i, true); });
+        dotsWrap.appendChild(b);
+      });
+      if (prev) prev.addEventListener('click', function () { go(index - 1, true); });
+      if (next) next.addEventListener('click', function () { go(index + 1, true); });
+
+      // keep index in sync when the user scrolls/swipes manually
+      var raf;
+      track.addEventListener('scroll', function () {
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(function () { index = nearestIndex(); update(); });
+      }, { passive: true });
+
+      // arrow-key support when the track is focused
+      track.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(index + 1, true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); go(index - 1, true); }
+      });
+
+      window.addEventListener('resize', function () { go(index, false); });
+      update();
+    }
+
+    // Footer year
+    var y = document.getElementById('year');
+    if (y) y.textContent = String(new Date().getFullYear());
+  })();
+</script>
+</body>
+</html>

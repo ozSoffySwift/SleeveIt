@@ -6,6 +6,8 @@
 
 <img src="Marketing/SleeveIt%20icon%20-%20rounded%20preview.png" width="128" alt="SleeveIt app icon">
 
+**🌐 [Website](https://ozsoffyswift.github.io/SleeveIt/)** · **[App Store](https://apps.apple.com/app/id6793905893)**
+
 A native iOS app that finds the exact sleeve size for your board game cards. Point your camera
 at a card and ARKit measures it in real millimetres, look a game up in the catalog, and SleeveIt
 builds a consolidated shopping list of every sleeve you need to buy.
